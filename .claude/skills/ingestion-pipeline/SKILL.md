@@ -58,6 +58,25 @@ Rejects invalid rows, logs reason.
 - Reject if no DOI and no stable source URL
 - Normalize published_at to ISO 8601
 
+## Policy Gates (Verifier)
+Hard reject (paper deleted from queue):
+  - Abstract null or < 80 words
+  - No DOI and no stable source URL
+  - published_at < 2018
+  - Duplicate DOI already in papers table
+
+Soft reject (stored, excluded from feed, status = 'flagged'):
+  - Summary > 150 words after retry
+  - All confidence scores < 0.60
+  - No sport tag assigned
+  - Evidence level null
+
+Auto-commit (status = 'auto_committed'):
+  - All confidence scores ≥ 0.85
+  - Summary ≤ 120 words
+  - ≥ 1 sport tag
+  - Evidence level assigned
+
 ## LLM call structure
 Use Anthropic API with response_format: json_schema.
 Max tokens: 400 per paper.
