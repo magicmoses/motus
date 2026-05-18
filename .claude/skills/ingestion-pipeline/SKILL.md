@@ -24,6 +24,16 @@ File: apps/worker/pipeline/researcher.py
 Discovers new papers from configured sources.
 Outputs: raw paper dicts to discovery queue (Supabase table: ingestion_queue)
 
+## Source Routing Logic
+researcher.py routes papers to the best available source automatically:
+
+  1. PubMed first — stable IDs, best metadata, most complete abstracts
+  2. Semantic Scholar fallback — if PubMed returns no results for query
+  3. alphaXiv last resort — preprints only, flag with source_name='alphaxiv'
+
+Routing decision logged per paper in ingestion_queue.source field.
+Never fetch the same DOI from multiple sources — dedup before routing.
+
 ## Stage 2 — Normalizer
 File: apps/worker/pipeline/normalizer.py
 Deduplicates by DOI first, title-hash fallback.
