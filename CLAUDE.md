@@ -26,6 +26,29 @@ NOT an AI coach. NOT a training app. A research intelligence layer.
 - Deterministic pipeline stages — not agentic loops
 - KISS: lightweight, deployable, maintainable
 
+## Mandatory skill reads before build
+Before ANY implementation, read ALL of these files completely in this order:
+1. Read .claude/skills/data-model/SKILL.md
+2. Read .claude/skills/research-knowledge/SKILL.md
+3. Read .claude/skills/ingestion-pipeline/SKILL.md
+4. Read .claude/skills/enrichment/SKILL.md
+5. Read .claude/skills/frontend-patterns/SKILL.md
+6. Read .claude/skills/anatomy-mapping/SKILL.md
+
+Also read all agent definitions:
+7. Read .claude/agents/code-generator.md
+8. Read .claude/agents/code-reviewer.md
+9. Read .claude/agents/refactor-worker.md
+10. Read .claude/agents/data-acquisition.md
+
+And all relevant commands:
+11. Read .claude/commands/plan.md
+12. Read .claude/commands/doctor.md
+13. Read .claude/commands/cost.md
+
+Do not start implementing until all 13 files are read.
+Confirm with: "All skill files read. Ready to build."
+
 ## Domain skills (load on demand)
 - Ingestion work → ingestion-pipeline
 - LLM prompts / tagging → enrichment
