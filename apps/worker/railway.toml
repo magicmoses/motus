@@ -1,4 +1,2 @@
 [deploy]
 startCommand = "python run_pipeline.py"
-restartPolicyType = "on-failure"
-restartPolicyMaxRetries = 3
