@@ -22,9 +22,12 @@ apps/worker/.venv/
 
 # Node
 node_modules/
-apps/web/node_modules/
-apps/web/.next/
-apps/web/out/
+
+# Next.js
+.next/
+out/
+.vercel
+*.tsbuildinfo
 
 # Worktree artifacts
 apps/web/..web_types_backup
