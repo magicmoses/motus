@@ -1,9 +1,5 @@
-[build]
-builder = "nixpacks"
-buildCommand = "pip install -r apps/worker/requirements.txt"
-
 [deploy]
-startCommand = "cd apps/worker && python run_pipeline.py"
+startCommand = "python run_pipeline.py"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
