@@ -225,7 +225,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      enriched_papers: {
+        Row: {
+          id: string
+          doi: string | null
+          title: string
+          abstract: string | null
+          authors: string[] | null
+          journal: string | null
+          source_url: string | null
+          source_id: string | null
+          source_name: string | null
+          published_at: string | null
+          created_at: string | null
+          enrichment_id: string | null
+          sports: string[] | null
+          body_regions: string[] | null
+          topics: string[] | null
+          evidence_level: number | null
+          study_type: string | null
+          summary: string | null
+          enrichment_status: string | null
+          confidence_sports: number | null
+          confidence_topics: number | null
+          confidence_regions: number | null
+          confidence_evidence: number | null
+          sample_size: number | null
+          population: string | null
+          practical_relevance: boolean | null
+          tags: string[] | null
+          enrichment_created_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

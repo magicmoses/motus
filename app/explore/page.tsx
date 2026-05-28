@@ -1,13 +1,12 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { toFeedPaper } from '@/lib/feed'
 import { FeedList } from '@/components/feed/FeedList'
 import { Pagination } from '@/components/feed/Pagination'
 import { EvidenceLegend } from '@/components/feed/EvidenceLegend'
 import { BodyMap } from '@/components/anatomy/BodyMap'
-import type { PaperWithEnrichment } from '@/types/supabase'
 
 const PAGE_SIZE = 20
-const FEED_STATUSES = ['auto_committed', 'needs_review']
 
 interface Props {
   searchParams: Promise<{
@@ -17,25 +16,27 @@ interface Props {
 }
 
 async function RegionFeed({ region, page }: { region?: string; page: number }) {
+  if (!region) {
+    return (
+      <p className="text-sm text-gray-400 py-8 text-center">
+        Select a body region above to filter papers
+      </p>
+    )
+  }
+
   const supabase = await createClient()
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  let countQ = supabase
-    .from('enrichments')
-    .select('id', { count: 'exact', head: true })
-    .in('enrichment_status', FEED_STATUSES)
-  if (region) countQ = countQ.contains('body_regions', [region])
-
-  let dataQ = supabase
-    .from('papers')
-    .select('*, enrichments!inner(*)')
-    .in('enrichments.enrichment_status', FEED_STATUSES)
-  if (region) dataQ = dataQ.contains('enrichments.body_regions', [region])
-
   const [{ count }, { data, error }] = await Promise.all([
-    countQ,
-    dataQ
+    supabase
+      .from('enriched_papers')
+      .select('id', { count: 'exact', head: true })
+      .contains('body_regions', [region]),
+    supabase
+      .from('enriched_papers')
+      .select('*')
+      .contains('body_regions', [region])
       .order('published_at', { ascending: false, nullsFirst: false })
       .order('id', { ascending: false })
       .range(from, to),
@@ -48,17 +49,9 @@ async function RegionFeed({ region, page }: { region?: string; page: number }) {
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-  if (!region) {
-    return (
-      <p className="text-sm text-gray-400 py-8 text-center">
-        Select a body region above to filter papers
-      </p>
-    )
-  }
-
   return (
     <>
-      <FeedList papers={(data ?? []) as PaperWithEnrichment[]} />
+      <FeedList papers={(data ?? []).map(r => toFeedPaper(r as Record<string, unknown>))} />
       <Pagination
         page={page}
         totalPages={totalPages}

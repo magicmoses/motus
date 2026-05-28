@@ -1,13 +1,12 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { toFeedPaper } from '@/lib/feed'
 import { FeedList } from '@/components/feed/FeedList'
 import { FilterBar } from '@/components/feed/FilterBar'
 import { Pagination } from '@/components/feed/Pagination'
 import { EvidenceLegend } from '@/components/feed/EvidenceLegend'
-import type { PaperWithEnrichment } from '@/types/supabase'
 
 const PAGE_SIZE = 20
-const FEED_STATUSES = ['auto_committed', 'needs_review']
 
 interface Props {
   searchParams: Promise<{
@@ -28,21 +27,15 @@ async function PersonalizedFeed({
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  let countQ = supabase
-    .from('enrichments')
-    .select('id', { count: 'exact', head: true })
-    .in('enrichment_status', FEED_STATUSES)
+  let countQ = supabase.from('enriched_papers').select('id', { count: 'exact', head: true })
   if (sport)  countQ = countQ.contains('sports', [sport])
   if (topic)  countQ = countQ.contains('topics', [topic])
   if (region) countQ = countQ.contains('body_regions', [region])
 
-  let dataQ = supabase
-    .from('papers')
-    .select('*, enrichments!inner(*)')
-    .in('enrichments.enrichment_status', FEED_STATUSES)
-  if (sport)  dataQ = dataQ.contains('enrichments.sports', [sport])
-  if (topic)  dataQ = dataQ.contains('enrichments.topics', [topic])
-  if (region) dataQ = dataQ.contains('enrichments.body_regions', [region])
+  let dataQ = supabase.from('enriched_papers').select('*')
+  if (sport)  dataQ = dataQ.contains('sports', [sport])
+  if (topic)  dataQ = dataQ.contains('topics', [topic])
+  if (region) dataQ = dataQ.contains('body_regions', [region])
   if (search) dataQ = dataQ.ilike('title', `%${search}%`)
 
   const [{ count }, { data, error }] = await Promise.all([
@@ -62,7 +55,7 @@ async function PersonalizedFeed({
 
   return (
     <>
-      <FeedList papers={(data ?? []) as PaperWithEnrichment[]} />
+      <FeedList papers={(data ?? []).map(r => toFeedPaper(r as Record<string, unknown>))} />
       <Pagination
         page={page}
         totalPages={totalPages}
