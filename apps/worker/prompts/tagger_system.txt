@@ -23,7 +23,7 @@ Schema:
 Allowed values:
 
 sports (use only these):
-  running | cycling | rowing | skiing | hyrox | inline_skating
+  running | cycling | rowing | skiing | hyrox | inline_skating | triathlon
 
 CRITICAL — sport assignment rules (read carefully):
   Most endurance physiology findings transfer across sports. Assign ALL sports that

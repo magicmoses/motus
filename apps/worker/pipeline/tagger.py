@@ -21,7 +21,7 @@ TAGGER_PROMPT = Path(__file__).parent.parent / 'prompts' / 'tagger_system.txt'
 _CONF_AUTO_COMMIT = 0.85
 _CONF_NEEDS_REVIEW = 0.60
 
-_ALLOWED_SPORTS = frozenset({'running', 'cycling', 'rowing', 'skiing', 'hyrox', 'inline_skating'})
+_ALLOWED_SPORTS = frozenset({'running', 'cycling', 'rowing', 'skiing', 'hyrox', 'inline_skating', 'triathlon'})
 _ALLOWED_BODY_REGIONS = frozenset({
     'calves', 'quads', 'hamstrings', 'glutes', 'core', 'lower_back',
     'hip_flexors', 'knees', 'achilles', 'shoulders', 'neck', 'grip_forearms',

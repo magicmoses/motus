@@ -378,7 +378,7 @@ export type EnrichmentStatus =
   | 'needs_review' | 'rejected' | 'flagged' | 'failed'
 
 export type SportName =
-  | 'running' | 'cycling' | 'rowing' | 'skiing' | 'hyrox' | 'inline_skating'
+  | 'running' | 'cycling' | 'rowing' | 'skiing' | 'hyrox' | 'inline_skating' | 'triathlon'
 
 export type StudyType =
   | 'RCT' | 'cohort' | 'review' | 'case_study'

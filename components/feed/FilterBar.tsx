@@ -10,6 +10,7 @@ const SPORTS: { value: SportName; label: string }[] = [
   { value: 'cycling', label: 'Cycling' },
   { value: 'rowing', label: 'Rowing' },
   { value: 'skiing', label: 'Skiing' },
+  { value: 'triathlon', label: 'Triathlon' },
   { value: 'hyrox', label: 'Hyrox' },
   { value: 'inline_skating', label: 'Inline Skating' },
 ]
