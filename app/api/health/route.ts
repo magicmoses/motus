@@ -60,9 +60,10 @@ export async function GET() {
   try {
     const supabase = await createClient()
 
+    // Use real SELECT (not HEAD) so RLS errors return a readable message
     const [papersCount, enrichmentsCount] = await Promise.all([
-      supabase.from('papers').select('*', { count: 'exact', head: true }),
-      supabase.from('enrichments').select('*', { count: 'exact', head: true }),
+      supabase.from('papers').select('*', { count: 'exact', head: false }).limit(0),
+      supabase.from('enrichments').select('*', { count: 'exact', head: false }).limit(0),
     ])
 
     if (papersCount.error) throw papersCount.error
