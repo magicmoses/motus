@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 
 import anthropic
@@ -36,6 +37,13 @@ _ALLOWED_TOPICS = frozenset({
 })
 _ALLOWED_STUDY_TYPES = frozenset({'RCT', 'cohort', 'review', 'case_study', 'mechanistic', 'meta_analysis', 'cross_sectional'})
 _ALLOWED_POPULATIONS = frozenset({'recreational', 'trained', 'elite', 'mixed', 'unknown'})
+
+
+def _extract_json(text: str) -> str:
+    """Strip markdown code fences if the model wraps its JSON output."""
+    text = text.strip()
+    match = re.search(r'```(?:json)?\s*([\s\S]*?)```', text)
+    return match.group(1).strip() if match else text
 
 
 def _filter_allowed(values: list, allowed: frozenset) -> list:
@@ -85,11 +93,11 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
     inp = msg.usage.input_tokens
     out = msg.usage.output_tokens
 
-    raw_text = msg.content[0].text.strip() if msg.content else ''
+    raw_text = _extract_json(msg.content[0].text if msg.content else '')
     try:
         data = json.loads(raw_text)
     except json.JSONDecodeError:
-        logger.warning(f'Tagger: invalid JSON response for "{title[:40]}"')
+        logger.warning(f'Tagger: invalid JSON response for "{title[:40]}" — raw: {raw_text[:120]!r}')
         return None, inp, out
 
     confidence: dict = data.get('confidence') or {}
