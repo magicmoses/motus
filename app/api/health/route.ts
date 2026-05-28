@@ -87,11 +87,12 @@ export async function GET() {
   const pipelineEverRan = papers_count > 0
   const pipelineRecentlyRan = paperAge !== null && paperAge < 48
 
+  const paperAgeStr = paperAge !== null ? `${paperAge.toFixed(1)} h ago` : 'unknown'
   const pipelineInference = !pipelineEverRan
     ? 'no_data — pipeline has not run yet or DB is empty'
     : pipelineRecentlyRan
-    ? `active — last paper ${paperAge.toFixed(1)} h ago`
-    : `idle — last paper ${paperAge.toFixed(1)} h ago`
+    ? `active — last paper ${paperAgeStr}`
+    : `idle — last paper ${paperAgeStr}`
 
   return NextResponse.json({
     status: 'ok',
