@@ -59,7 +59,6 @@ class SemanticScholarClient:
                 timeout=30,
             )
             resp.raise_for_status()
-            time.sleep(self.delay)
             data = resp.json()
             papers = []
             for item in data.get('data', []):
@@ -70,6 +69,8 @@ class SemanticScholarClient:
         except Exception as e:
             logger.error(f'Semantic Scholar search error: {e}')
             return []
+        finally:
+            time.sleep(self.delay)
 
     def _normalize(self, item: dict) -> dict | None:
         try:
