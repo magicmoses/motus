@@ -64,8 +64,9 @@ const { data } = await supabase
 // New feed
 const { data } = await supabase
   .from('papers')
-  .select('*, enrichments(*)')
-  .order('created_at', { ascending: false })
+  .select('*, enrichments!inner(*)')
+  .eq('enrichments.enrichment_status', 'auto_committed')
+  .order('published_at', { ascending: false, nullsFirst: false })
   .limit(20)
 
 // Anatomy filter

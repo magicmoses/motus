@@ -30,7 +30,7 @@ async function PaperFeed({
     .from('papers')
     .select('*, enrichments!inner(*)')
     .eq('enrichments.enrichment_status', 'auto_committed')
-    .order('created_at', { ascending: false })
+    .order('published_at', { ascending: false, nullsFirst: false })
     .limit(20)
 
   if (sport) query = query.contains('enrichments.sports', [sport])
