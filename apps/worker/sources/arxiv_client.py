@@ -13,16 +13,20 @@ BASE_URL = 'https://export.arxiv.org/api/query'
 ATOM_NS = 'http://www.w3.org/2005/Atom'
 
 ARXIV_QUERIES = [
-    'all:endurance running physiology',
-    'all:running biomechanics performance',
-    'all:cycling performance physiology',
-    'all:VO2max endurance training',
-    'all:sports nutrition endurance athlete',
-    'all:HRV heart rate variability exercise',
-    'all:running injury prevention biomechanics',
-    'all:marathon performance prediction',
-    'all:altitude training hypoxia endurance',
-    'all:strength training endurance performance',
+    # Cross-sport physiology — will be multi-tagged by tagger
+    'all:VO2max endurance training adaptation',
+    'all:lactate threshold aerobic capacity athlete',
+    'all:HRV heart rate variability training load',
+    'all:altitude hypoxia endurance performance',
+    'all:sports nutrition endurance performance',
+    'all:periodization high intensity interval training endurance',
+    'all:strength training endurance athlete',
+    # Sport-specific
+    'all:running biomechanics economy performance',
+    'all:marathon ultramarathon trail running physiology',
+    'all:cycling power output aerobic performance',
+    'all:rowing ergometer physiology performance',
+    'all:cross-country skiing endurance physiology',
 ]
 
 

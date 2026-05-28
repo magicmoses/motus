@@ -25,6 +25,32 @@ Allowed values:
 sports (use only these):
   running | cycling | rowing | skiing | hyrox | inline_skating
 
+CRITICAL — sport assignment rules (read carefully):
+  Most endurance physiology findings transfer across sports. Assign ALL sports that
+  genuinely apply, not just the first one that fits.
+
+  Case 1 — Explicitly single sport:
+    Abstract mentions "marathon runners", "road cyclists", "rowing ergometer", etc.
+    → Assign only that sport. Confidence 0.90+.
+
+  Case 2 — General endurance population:
+    Abstract uses "endurance athletes", "aerobic capacity", "trained athletes" without
+    naming a sport, OR the study population includes multiple sports.
+    → Assign: running, cycling, rowing, skiing (all four core endurance sports).
+    Confidence 0.75.
+
+  Case 3 — Physiological parameter studies (VO2max, lactate, HRV, cardiac output,
+    altitude, periodization, sleep, nutrition) without sport specificity:
+    → Assign: running, cycling, rowing, skiing. Confidence 0.75.
+
+  Case 4 — Injury and biomechanics papers:
+    These are usually sport-specific. Only assign the named sport.
+    If no sport is named, assign running (most common default). Confidence 0.60.
+
+  Case 5 — Multiple sports explicitly mentioned:
+    "Cyclists and runners", "team and individual sports" etc.
+    → Assign all explicitly mentioned sports. Confidence 0.85.
+
 body_regions (use only these):
   calves | quads | hamstrings | glutes | core | lower_back |
   hip_flexors | knees | achilles | shoulders | neck | grip_forearms |
@@ -36,7 +62,8 @@ topics (use only these):
   strength | overtraining | sleep | active_recovery | passive_recovery |
   hrv_recovery | carbohydrates | protein | hydration | supplements |
   gut_health | tendon | stress_fracture | it_band | plantar_fascia |
-  knee | hamstring | prevention | psychology | pacing_strategy | pain_tolerance
+  knee | hamstring | prevention | psychology | pacing_strategy | pain_tolerance |
+  marathon | half_marathon | ultramarathon | trail_running | 5k_10k
 
 study_type (use only these):
   RCT | cohort | review | case_study | mechanistic | meta_analysis | cross_sectional
@@ -47,17 +74,18 @@ population (use only these):
 evidence_level:
   1 = RCT or meta-analysis
   2 = Cohort or controlled study
-  3 = Case study or small N
+  3 = Case study or small N (< 20 participants)
   4 = Mechanistic or narrative review
 
 Confidence scoring rules:
   0.85-1.0 = clearly and explicitly stated in the abstract
-  0.60-0.84 = implied or partially stated
+  0.60-0.84 = implied, inferred, or multi-sport inference
   0.0-0.59  = uncertain or not mentioned
 
-Sport-body region validation:
-  If sport=running, prefer body_regions from: calves, quads, hamstrings,
-    glutes, core, achilles, knees, foot, it_band
-  If sport=cycling, prefer: quads, hip_flexors, lower_back, knees, neck
-  If sport=rowing, prefer: lats, core, quads, lower_back, grip_forearms, shoulders
-  If no body region mentioned in abstract: return []
+Sport-body region hints (only apply when body regions are mentioned):
+  running  → calves, quads, hamstrings, glutes, core, achilles, knees, foot, it_band
+  cycling  → quads, hip_flexors, lower_back, knees, neck
+  rowing   → lats, core, quads, lower_back, grip_forearms, shoulders
+  skiing   → quads, glutes, core, hip_abductors, lower_back, ankles
+  hyrox    → quads, core, shoulders, grip_forearms
+  If no body region is mentioned in the abstract: return []

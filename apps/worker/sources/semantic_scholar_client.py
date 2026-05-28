@@ -13,16 +13,32 @@ BASE_URL = 'https://api.semanticscholar.org/graph/v1/'
 FIELDS = 'title,abstract,authors,publicationVenue,publicationDate,externalIds,isOpenAccess,citationCount'
 
 SS_QUERIES = [
-    'endurance running performance',
-    'cycling physiology performance',
-    'VO2max training adaptation',
-    'sports nutrition endurance',
-    'running injury prevention',
-    'heart rate variability athletes',
-    'altitude training endurance',
-    'ultramarathon physiology',
-    'rowing performance biomechanics',
-    'strength training endurance athletes',
+    # Running
+    'marathon running performance physiology',
+    'ultramarathon trail running physiology',
+    'running economy biomechanics injury',
+    # Cycling
+    'road cycling power output aerobic capacity',
+    'functional threshold power cyclists training',
+    'cycling physiology performance endurance',
+    # Rowing
+    'rowing ergometer performance physiology',
+    'on-water rowing biomechanics strength',
+    # Skiing
+    'cross-country skiing endurance physiology',
+    'alpine ski touring performance physiology',
+    # Hyrox / functional fitness
+    'functional fitness concurrent training performance',
+    'hybrid athlete strength endurance',
+    # Cross-sport physiology (multi-taggable)
+    'VO2max endurance athletes training adaptation',
+    'lactate threshold aerobic performance sport',
+    'HRV heart rate variability training load',
+    'altitude hypoxia endurance adaptation',
+    'periodization endurance training load',
+    'sports nutrition endurance performance',
+    'sleep recovery athletic performance',
+    'strength training endurance sport',
 ]
 
 

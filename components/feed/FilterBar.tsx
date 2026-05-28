@@ -14,6 +14,14 @@ const SPORTS: { value: SportName; label: string }[] = [
   { value: 'inline_skating', label: 'Inline Skating' },
 ]
 
+const RUNNING_DISTANCES: { value: string; label: string }[] = [
+  { value: 'marathon', label: 'Marathon' },
+  { value: 'half_marathon', label: 'Half Marathon' },
+  { value: 'ultramarathon', label: 'Ultra' },
+  { value: 'trail_running', label: 'Trail' },
+  { value: '5k_10k', label: '5K / 10K' },
+]
+
 const TOPICS = [
   { value: '', label: 'All Topics' },
   { value: 'vo2max', label: 'VO2max' },
@@ -106,6 +114,22 @@ export function FilterBar() {
           </Badge>
         ))}
       </div>
+
+      {activeSport === 'running' && (
+        <div className="flex flex-wrap items-center gap-2 pl-1">
+          <span className="text-xs text-gray-400 shrink-0">Distance:</span>
+          {RUNNING_DISTANCES.map(({ value, label }) => (
+            <Badge
+              key={value}
+              variant={activeTopic === value ? 'default' : 'outline'}
+              className="cursor-pointer select-none text-xs"
+              onClick={() => updateParams({ topic: activeTopic === value ? '' : value })}
+            >
+              {label}
+            </Badge>
+          ))}
+        </div>
+      )}
 
       <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-2 items-center">
         <input

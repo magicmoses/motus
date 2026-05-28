@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { FeedList } from '@/components/feed/FeedList'
 import { FilterBar } from '@/components/feed/FilterBar'
 import { Pagination } from '@/components/feed/Pagination'
+import { EvidenceLegend } from '@/components/feed/EvidenceLegend'
+import { BodyMap } from '@/components/anatomy/BodyMap'
 import type { PaperWithEnrichment } from '@/types/supabase'
 
 const PAGE_SIZE = 20
@@ -35,20 +37,19 @@ async function PersonalizedFeed({
   const to = from + PAGE_SIZE - 1
 
   let countQ = supabase
-    .from('papers')
-    .select('*, enrichments!inner(*)', { count: 'exact', head: true })
-    .eq('enrichments.enrichment_status', 'auto_committed')
-  if (sport) countQ = countQ.contains('enrichments.sports', [sport])
-  if (topic) countQ = countQ.contains('enrichments.topics', [topic])
-  if (region) countQ = countQ.contains('enrichments.body_regions', [region])
-  if (search) countQ = countQ.ilike('title', `%${search}%`)
+    .from('enrichments')
+    .select('id', { count: 'exact', head: true })
+    .eq('enrichment_status', 'auto_committed')
+  if (sport)  countQ = countQ.contains('sports', [sport])
+  if (topic)  countQ = countQ.contains('topics', [topic])
+  if (region) countQ = countQ.contains('body_regions', [region])
 
   let dataQ = supabase
     .from('papers')
     .select('*, enrichments!inner(*)')
     .eq('enrichments.enrichment_status', 'auto_committed')
-  if (sport) dataQ = dataQ.contains('enrichments.sports', [sport])
-  if (topic) dataQ = dataQ.contains('enrichments.topics', [topic])
+  if (sport)  dataQ = dataQ.contains('enrichments.sports', [sport])
+  if (topic)  dataQ = dataQ.contains('enrichments.topics', [topic])
   if (region) dataQ = dataQ.contains('enrichments.body_regions', [region])
   if (search) dataQ = dataQ.ilike('title', `%${search}%`)
 
@@ -75,6 +76,7 @@ async function PersonalizedFeed({
         basePath="/for-you"
         params={{ sport, topic, region, search }}
       />
+      <EvidenceLegend />
     </>
   )
 }
@@ -91,6 +93,9 @@ export default async function ForYouPage({ searchParams }: Props) {
       </p>
       <Suspense>
         <FilterBar />
+      </Suspense>
+      <Suspense>
+        <BodyMap />
       </Suspense>
       <Suspense fallback={<p className="text-gray-400 text-sm">Loading&hellip;</p>}>
         <PersonalizedFeed sport={sport} topic={topic} region={region} search={search} page={page} />

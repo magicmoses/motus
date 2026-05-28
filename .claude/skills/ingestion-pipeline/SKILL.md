@@ -24,15 +24,22 @@ File: apps/worker/pipeline/researcher.py
 Discovers new papers from configured sources.
 Outputs: raw paper dicts to discovery queue (Supabase table: ingestion_queue)
 
+Dedup: checks both papers table (paper_exists_by_doi) AND ingestion_queue
+(paper_exists_in_queue) before queuing — prevents re-queuing same DOI each run.
+
 ## Source Routing Logic
-researcher.py routes papers to the best available source automatically:
+researcher.py runs all sources in parallel (not fallback):
+  1. PubMed — stable IDs, best metadata, 77 targeted queries across all sports
+  2. Semantic Scholar — broader coverage, 20 balanced queries
+  3. arXiv — preprints, 12 queries (cross-sport physiology + sport-specific)
+  4. RSS — journal feeds (BJSM, JAP, IJSNEM, etc.)
 
-  1. PubMed first — stable IDs, best metadata, most complete abstracts
-  2. Semantic Scholar fallback — if PubMed returns no results for query
-  3. alphaXiv last resort — preprints only, flag with source_name='alphaxiv'
-
-Routing decision logged per paper in ingestion_queue.source field.
-Never fetch the same DOI from multiple sources — dedup before routing.
+Query design principle:
+  - Sport-specific queries (running/cycling/rowing/skiing/hyrox/skating) find
+    sport-specific papers that the tagger will assign with high confidence
+  - Cross-sport physiology queries (VO2max, lactate, HRV, altitude, periodization,
+    nutrition) are intentionally generic — the tagger assigns ALL applicable sports
+    to these papers so they appear in every sport filter
 
 ## Stage 2 — Normalizer
 File: apps/worker/pipeline/normalizer.py

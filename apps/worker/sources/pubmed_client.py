@@ -51,11 +51,12 @@ ENDURANCE_QUERIES = [
     '"concurrent training"[TIAB]',
     '"hybrid athlete"[TIAB]',
     '"functional threshold"[TIAB]',
-    # INLINE SKATING (3)
+    # INLINE SKATING (4)
     '"inline skating"[TIAB]',
     '"speed skating"[TIAB] AND "endurance"[TIAB]',
-    '"roller skating"[TIAB] AND "physiology"[TIAB]',
-    # PHYSIOLOGY cross-sport (8)
+    '"long track speed skating"[TIAB]',
+    '"short track speed skating"[TIAB] AND "physiology"[TIAB]',
+    # PHYSIOLOGY cross-sport (8) — tagger will assign multiple sports
     '"maximal oxygen uptake"[TIAB]',
     '"VO2max"[TIAB] AND "endurance"[TIAB]',
     '"lactate threshold"[TIAB]',
@@ -89,19 +90,26 @@ ENDURANCE_QUERIES = [
     '"caffeine"[TIAB] AND "endurance"[TIAB]',
     '"beta-alanine"[TIAB] AND "performance"[TIAB]',
     '"nitrate supplementation"[TIAB]',
-    '"gastrointestinal"[TIAB] AND "running"[TIAB]',
-    # INJURY (9)
+    '"gastrointestinal"[TIAB] AND "endurance"[TIAB]',
+    # INJURY — running (5)
     '"achilles tendinopathy"[TIAB]',
     '"running injury"[TIAB]',
-    '"stress fracture"[TIAB] AND "running"[TIAB]',
     '"iliotibial band"[TIAB]',
-    '"patellofemoral"[TIAB] AND "running"[TIAB]',
     '"plantar fasciitis"[TIAB]',
-    '"hamstring injury"[TIAB] AND "running"[TIAB]',
+    '"patellofemoral pain"[TIAB]',
+    # INJURY — cycling (3)
+    '"knee pain"[TIAB] AND "cycling"[TIAB]',
+    '"lower back pain"[TIAB] AND "cyclist"[TIAB]',
+    '"cyclist overuse injury"[TIAB]',
+    # INJURY — rowing (2)
+    '"low back pain"[TIAB] AND "rowing"[TIAB]',
+    '"rowing injury"[TIAB]',
+    # INJURY — cross-sport (3)
+    '"stress fracture"[TIAB] AND "athlete"[TIAB]',
     '"injury prevention"[TIAB] AND "endurance"[TIAB]',
     '"load management"[TIAB] AND "injury"[TIAB]',
 ]
-# Total: 65 queries
+# Total: 77 queries
 
 
 class PubMedClient:

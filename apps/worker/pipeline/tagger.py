@@ -34,6 +34,8 @@ _ALLOWED_TOPICS = frozenset({
     'hrv_recovery', 'carbohydrates', 'protein', 'hydration', 'supplements',
     'gut_health', 'tendon', 'stress_fracture', 'it_band', 'plantar_fascia',
     'knee', 'hamstring', 'prevention', 'psychology', 'pacing_strategy', 'pain_tolerance',
+    # Running distance categories
+    'marathon', 'half_marathon', 'ultramarathon', 'trail_running', '5k_10k',
 })
 _ALLOWED_STUDY_TYPES = frozenset({'RCT', 'cohort', 'review', 'case_study', 'mechanistic', 'meta_analysis', 'cross_sectional'})
 _ALLOWED_POPULATIONS = frozenset({'recreational', 'trained', 'elite', 'mixed', 'unknown'})

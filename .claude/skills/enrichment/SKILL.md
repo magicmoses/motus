@@ -25,24 +25,37 @@ Prompt file: apps/worker/prompts/tagger_system.txt
 JSON schema (response_format: json_schema):
 ```json
 {
-  "sports": ["running", "cycling", "rowing", "skiing", "hyrox", "inline_skating"],
-  "body_regions": ["calves", "quads", "hamstrings", "glutes", "core", "lower_back",
-                   "hip_flexors", "knees", "achilles", "shoulders", "neck",
-                   "grip_forearms", "hip_abductors", "ankles", "it_band"],
-  "topics": ["recovery", "biomechanics", "nutrition", "vo2max", "sleep",
-             "hrv", "injury", "strength", "altitude", "heat"],
+  "sports": ["running", "cycling"],
+  "body_regions": ["calves", "quads"],
+  "topics": ["vo2max", "intervals"],
   "evidence_level": 1,
   "sample_size": 42,
   "study_type": "RCT",
-  "population": "trained"
+  "population": "trained",
+  "confidence": {
+    "sports": 0.9,
+    "body_regions": 0.8,
+    "topics": 0.9,
+    "evidence_level": 0.9
+  }
 }
 ```
 
 Enums:
 - sports: running | cycling | rowing | skiing | hyrox | inline_skating
-- study_type: RCT | cohort | review | case_study | mechanistic | meta_analysis
+  IMPORTANT: assign multiple sports for cross-sport papers (see tagger_system.txt rules)
+- study_type: RCT | cohort | review | case_study | mechanistic | meta_analysis | cross_sectional
 - population: recreational | trained | elite | mixed | unknown
 - evidence_level: 1–4 (see ingestion-pipeline skill)
+
+Topics (full list):
+  vo2max | lactate | hrv | cardiac_output | altitude | biomechanics |
+  pacing | heat_performance | fatigue | periodization | intervals |
+  strength | overtraining | sleep | active_recovery | passive_recovery |
+  hrv_recovery | carbohydrates | protein | hydration | supplements |
+  gut_health | tendon | stress_fracture | it_band | plantar_fascia |
+  knee | hamstring | prevention | psychology | pacing_strategy | pain_tolerance |
+  marathon | half_marathon | ultramarathon | trail_running | 5k_10k
 
 ## Verifier checks
 - DOI regex: `^10\.\d{4,}/\S+$`
