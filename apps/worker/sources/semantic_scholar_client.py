@@ -39,6 +39,17 @@ SS_QUERIES = [
     'sports nutrition endurance performance',
     'sleep recovery athletic performance',
     'strength training endurance sport',
+    # Extended — female athletes, mental, triathlon
+    'polarized training zone distribution intensity endurance',
+    'female athlete physiology menstrual cycle performance',
+    'triathlon multisport performance physiology',
+    'mental fatigue endurance pacing strategy',
+    'ketogenic low carbohydrate diet endurance athlete',
+    'blood flow restriction training muscle adaptation',
+    'mitochondrial biogenesis aerobic exercise training',
+    'detraining retraining aerobic capacity endurance',
+    'wearable technology training load monitoring athlete',
+    'bone stress injury runner athlete load',
 ]
 
 

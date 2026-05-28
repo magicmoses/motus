@@ -27,6 +27,15 @@ ARXIV_QUERIES = [
     'all:cycling power output aerobic performance',
     'all:rowing ergometer physiology performance',
     'all:cross-country skiing endurance physiology',
+    # Extended
+    'all:machine learning endurance performance prediction sport',
+    'all:wearable sensor biomechanics running gait analysis',
+    'all:pacing strategy marathon race performance optimization',
+    'all:polarized training intensity zone distribution endurance',
+    'all:triathlon multisport physiology performance',
+    'all:female athlete physiology menstrual cycle endurance',
+    'all:fatigue monitoring athlete training load wearable',
+    'all:muscle fatigue electromyography endurance exercise',
 ]
 
 

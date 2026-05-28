@@ -1,9 +1,9 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { FeedList } from '@/components/feed/FeedList'
-import { FilterBar } from '@/components/feed/FilterBar'
 import { Pagination } from '@/components/feed/Pagination'
 import { EvidenceLegend } from '@/components/feed/EvidenceLegend'
+import { BodyMap } from '@/components/anatomy/BodyMap'
 import type { PaperWithEnrichment } from '@/types/supabase'
 
 const PAGE_SIZE = 20
@@ -11,40 +11,27 @@ const FEED_STATUSES = ['auto_committed', 'needs_review']
 
 interface Props {
   searchParams: Promise<{
-    sport?: string
-    topic?: string
     region?: string
-    search?: string
     page?: string
   }>
 }
 
-async function PaperFeed({
-  sport, topic, region, search, page,
-}: {
-  sport?: string; topic?: string; region?: string; search?: string; page: number
-}) {
+async function RegionFeed({ region, page }: { region?: string; page: number }) {
   const supabase = await createClient()
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  // Count from enrichments table — avoids !inner join count inconsistencies
   let countQ = supabase
     .from('enrichments')
     .select('id', { count: 'exact', head: true })
     .in('enrichment_status', FEED_STATUSES)
-  if (sport)  countQ = countQ.contains('sports', [sport])
-  if (topic)  countQ = countQ.contains('topics', [topic])
   if (region) countQ = countQ.contains('body_regions', [region])
 
   let dataQ = supabase
     .from('papers')
     .select('*, enrichments!inner(*)')
     .in('enrichments.enrichment_status', FEED_STATUSES)
-  if (sport)  dataQ = dataQ.contains('enrichments.sports', [sport])
-  if (topic)  dataQ = dataQ.contains('enrichments.topics', [topic])
   if (region) dataQ = dataQ.contains('enrichments.body_regions', [region])
-  if (search) dataQ = dataQ.ilike('title', `%${search}%`)
 
   const [{ count }, { data, error }] = await Promise.all([
     countQ,
@@ -61,6 +48,14 @@ async function PaperFeed({
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
+  if (!region) {
+    return (
+      <p className="text-sm text-gray-400 py-8 text-center">
+        Select a body region above to filter papers
+      </p>
+    )
+  }
+
   return (
     <>
       <FeedList papers={(data ?? []) as PaperWithEnrichment[]} />
@@ -69,27 +64,27 @@ async function PaperFeed({
         totalPages={totalPages}
         total={total}
         pageSize={PAGE_SIZE}
-        basePath="/new"
-        params={{ sport, topic, region, search }}
+        basePath="/explore"
+        params={{ region }}
       />
       <EvidenceLegend />
     </>
   )
 }
 
-export default async function NewPage({ searchParams }: Props) {
-  const { sport, topic, region, search, page: pageParam } = await searchParams
+export default async function ExplorePage({ searchParams }: Props) {
+  const { region, page: pageParam } = await searchParams
   const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-1">Latest Research</h1>
-      <p className="text-sm text-gray-500 mb-6">Papers from PubMed, Semantic Scholar, and arXiv</p>
+      <h1 className="text-2xl font-bold mb-1">Explore by Body Region</h1>
+      <p className="text-sm text-gray-500 mb-6">Navigate anatomy to find relevant research</p>
       <Suspense>
-        <FilterBar />
+        <BodyMap />
       </Suspense>
       <Suspense fallback={<p className="text-gray-400 text-sm">Loading&hellip;</p>}>
-        <PaperFeed sport={sport} topic={topic} region={region} search={search} page={page} />
+        <RegionFeed region={region} page={page} />
       </Suspense>
     </main>
   )

@@ -108,8 +108,42 @@ ENDURANCE_QUERIES = [
     '"stress fracture"[TIAB] AND "athlete"[TIAB]',
     '"injury prevention"[TIAB] AND "endurance"[TIAB]',
     '"load management"[TIAB] AND "injury"[TIAB]',
+    # FEMALE ATHLETES (4)
+    '"female athlete"[TIAB] AND "performance"[TIAB]',
+    '"menstrual cycle"[TIAB] AND "exercise performance"[TIAB]',
+    '"relative energy deficiency in sport"[TIAB]',
+    '"female endurance"[TIAB]',
+    # PHYSIOLOGY DEEP (5)
+    '"mitochondrial adaptation"[TIAB] AND "exercise"[TIAB]',
+    '"muscle fiber type"[TIAB] AND "endurance"[TIAB]',
+    '"blood flow restriction"[TIAB] AND "training"[TIAB]',
+    '"respiratory muscle training"[TIAB]',
+    '"bone stress injury"[TIAB] AND "runner"[TIAB]',
+    # TRAINING METHODS (4)
+    '"polarized training"[TIAB]',
+    '"zone 2 training"[TIAB]',
+    '"detraining"[TIAB] AND "endurance"[TIAB]',
+    '"heat training"[TIAB] AND "endurance"[TIAB]',
+    # RECOVERY EXTENDED (3)
+    '"napping"[TIAB] AND "athletic performance"[TIAB]',
+    '"foam rolling"[TIAB] AND "performance"[TIAB]',
+    '"massage"[TIAB] AND "exercise recovery"[TIAB]',
+    # NUTRITION EXTENDED (5)
+    '"ketogenic diet"[TIAB] AND "endurance"[TIAB]',
+    '"sodium bicarbonate"[TIAB] AND "exercise performance"[TIAB]',
+    '"iron deficiency"[TIAB] AND "athlete"[TIAB]',
+    '"antioxidant"[TIAB] AND "endurance performance"[TIAB]',
+    '"creatine"[TIAB] AND "endurance"[TIAB]',
+    # TRIATHLON / MULTISPORT (3)
+    '"triathlon"[TIAB] AND "physiology"[TIAB]',
+    '"ironman triathlon"[TIAB]',
+    '"duathlon"[TIAB] AND "performance"[TIAB]',
+    # MENTAL PERFORMANCE (3)
+    '"mental fatigue"[TIAB] AND "endurance"[TIAB]',
+    '"pacing strategy"[TIAB] AND "endurance"[TIAB]',
+    '"psychological"[TIAB] AND "endurance performance"[TIAB]',
 ]
-# Total: 77 queries
+# Total: 107 queries
 
 
 class PubMedClient:

@@ -4,10 +4,10 @@ import { FeedList } from '@/components/feed/FeedList'
 import { FilterBar } from '@/components/feed/FilterBar'
 import { Pagination } from '@/components/feed/Pagination'
 import { EvidenceLegend } from '@/components/feed/EvidenceLegend'
-import { BodyMap } from '@/components/anatomy/BodyMap'
 import type { PaperWithEnrichment } from '@/types/supabase'
 
 const PAGE_SIZE = 20
+const FEED_STATUSES = ['auto_committed', 'needs_review']
 
 interface Props {
   searchParams: Promise<{
@@ -20,17 +20,9 @@ interface Props {
 }
 
 async function PersonalizedFeed({
-  sport,
-  topic,
-  region,
-  search,
-  page,
+  sport, topic, region, search, page,
 }: {
-  sport?: string
-  topic?: string
-  region?: string
-  search?: string
-  page: number
+  sport?: string; topic?: string; region?: string; search?: string; page: number
 }) {
   const supabase = await createClient()
   const from = (page - 1) * PAGE_SIZE
@@ -39,7 +31,7 @@ async function PersonalizedFeed({
   let countQ = supabase
     .from('enrichments')
     .select('id', { count: 'exact', head: true })
-    .eq('enrichment_status', 'auto_committed')
+    .in('enrichment_status', FEED_STATUSES)
   if (sport)  countQ = countQ.contains('sports', [sport])
   if (topic)  countQ = countQ.contains('topics', [topic])
   if (region) countQ = countQ.contains('body_regions', [region])
@@ -47,7 +39,7 @@ async function PersonalizedFeed({
   let dataQ = supabase
     .from('papers')
     .select('*, enrichments!inner(*)')
-    .eq('enrichments.enrichment_status', 'auto_committed')
+    .in('enrichments.enrichment_status', FEED_STATUSES)
   if (sport)  dataQ = dataQ.contains('enrichments.sports', [sport])
   if (topic)  dataQ = dataQ.contains('enrichments.topics', [topic])
   if (region) dataQ = dataQ.contains('enrichments.body_regions', [region])
@@ -55,7 +47,10 @@ async function PersonalizedFeed({
 
   const [{ count }, { data, error }] = await Promise.all([
     countQ,
-    dataQ.order('published_at', { ascending: false, nullsFirst: false }).range(from, to),
+    dataQ
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: false })
+      .range(from, to),
   ])
 
   if (error) {
@@ -83,7 +78,7 @@ async function PersonalizedFeed({
 
 export default async function ForYouPage({ searchParams }: Props) {
   const { sport, topic, region, search, page: pageParam } = await searchParams
-  const page = Math.max(1, parseInt(pageParam ?? '1', 10))
+  const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
@@ -93,9 +88,6 @@ export default async function ForYouPage({ searchParams }: Props) {
       </p>
       <Suspense>
         <FilterBar />
-      </Suspense>
-      <Suspense>
-        <BodyMap />
       </Suspense>
       <Suspense fallback={<p className="text-gray-400 text-sm">Loading&hellip;</p>}>
         <PersonalizedFeed sport={sport} topic={topic} region={region} search={search} page={page} />
