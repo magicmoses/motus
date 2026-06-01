@@ -12,7 +12,6 @@ const SPORTS: { value: SportName; label: string }[] = [
   { value: 'skiing', label: 'Skiing' },
   { value: 'triathlon', label: 'Triathlon' },
   { value: 'hyrox', label: 'Hyrox' },
-  { value: 'inline_skating', label: 'Inline Skating' },
 ]
 
 const RUNNING_DISTANCES: { value: string; label: string }[] = [
