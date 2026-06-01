@@ -45,7 +45,7 @@ export async function RegionPaperPreview({ region, sort }: Props) {
 
   const label = REGION_LABELS[region] ?? region
   const total = count ?? 0
-  const papers = (data ?? []) as Array<{
+  const papers = (data ?? []) as unknown as Array<{
     id: string; title: string; evidence_level: number | null
     sports: string[] | null; published_at: string | null; citation_count: number | null
   }>
