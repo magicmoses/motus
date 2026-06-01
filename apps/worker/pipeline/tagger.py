@@ -21,13 +21,13 @@ for _name in ('.env', '.env.local'):
 logger = get_logger(__name__)
 
 MODEL = 'claude-haiku-4-5-20251001'
-MAX_TOKENS = 400
+MAX_TOKENS = 1024
 TAGGER_PROMPT = Path(__file__).parent.parent / 'prompts' / 'tagger_system.txt'
 
 _CONF_AUTO_COMMIT = 0.85
 _CONF_NEEDS_REVIEW = 0.60
 
-_ALLOWED_SPORTS = frozenset({'running', 'cycling', 'rowing', 'skiing', 'hyrox', 'inline_skating', 'triathlon'})
+_ALLOWED_SPORTS = frozenset({'running', 'cycling', 'rowing', 'skiing', 'hyrox', 'triathlon'})
 _ALLOWED_RESEARCH_DIMENSIONS = frozenset({
     'female_athlete', 'masters_longevity', 'supplements',
     'technology_wearables', 'ai_ml_research', 'para_sport',

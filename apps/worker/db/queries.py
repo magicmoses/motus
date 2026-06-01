@@ -195,13 +195,14 @@ def update_enrichment(id: str, fields: dict) -> None:
 
 
 def get_all_tagged_enrichments(limit: int = 1200) -> list[dict]:
-    """All enrichments that have been tagged — for full re-tag after prompt changes."""
+    """All enrichments for full re-tag after prompt changes — includes failed so
+    papers truncated by MAX_TOKENS in a previous run get another attempt."""
     client = get_client()
     result = (
         client.table('enrichments')
         .select('*, papers(*)')
-        .in_('enrichment_status', ['auto_committed', 'needs_review'])
-        .not_.is_('sports', None)
+        .in_('enrichment_status', ['auto_committed', 'needs_review', 'failed'])
+        .not_.is_('papers.abstract', None)
         .limit(limit)
         .execute()
     )
