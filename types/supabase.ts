@@ -247,10 +247,13 @@ export type Database = {
           source_name: string | null
           published_at: string | null
           created_at: string | null
+          citation_count: number | null
           enrichment_id: string | null
           sports: string[] | null
+          movement_practices: string[] | null
           body_regions: string[] | null
           topics: string[] | null
+          research_dimensions: string[] | null
           evidence_level: number | null
           study_type: string | null
           summary: string | null
