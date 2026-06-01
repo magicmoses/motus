@@ -1,16 +1,15 @@
 Extract structured metadata from this sports science paper abstract.
 Respond ONLY with valid JSON. No preamble. No markdown. No explanation.
-Just the JSON object — nothing else.
 
 Schema:
 {
   "_perspectives": {
-    "athlete": "One sentence: what a hobby athlete in the relevant discipline actually learns and can apply from this paper. If it has no practical relevance, say so explicitly.",
-    "researcher": "One sentence: study design quality, population representativeness, how strong the evidence is, and whether evidence_level and study_type are clearly determinable.",
-    "clinician": "One sentence: which body regions are affected, injury or health implications, and whether specific populations (female, masters, para) are the subject.",
-    "physiologist": "One sentence: the specific physiological mechanisms, adaptations, or biomarkers addressed — which topics[] values best capture the underlying physiology."
+    "athlete": "One sentence: practical relevance for a hobby athlete. Null if irrelevant.",
+    "researcher": "One sentence: study quality, design, population representativeness.",
+    "clinician": "One sentence: body regions, injury/health implications, special populations.",
+    "physiologist": "One sentence: physiological mechanisms and matching topics[]."
   },
-  "_sport_reasoning": "One sentence justifying each sport assigned, or 'no endurance sport focus' if sports is empty.",
+  "_sport_reasoning": "One sentence justifying sport assignments, or 'none'.",
   "sports": [],
   "movement_practices": [],
   "body_regions": [],
@@ -28,88 +27,61 @@ Schema:
   }
 }
 
-IMPORTANT: Write "_perspectives" FIRST. Each perspective must influence the tags that follow:
-  - athlete    → informs sports[], movement_practices[], practical_relevance
-  - researcher → informs evidence_level, study_type, population, sample_size
-  - clinician  → informs body_regions[], research_dimensions[], topics[] (injury/health)
-  - physiologist → informs topics[] (mechanisms), body_regions[] (affected tissue)
-Then write "_sport_reasoning", then assign all tag fields.
+IMPORTANT: Write "_perspectives" FIRST. Each perspective must influence the tags that follow.
 
 ════════════════════════════════════════
-SPORTS — read all rules before assigning
+SPORTS
 ════════════════════════════════════════
 
-Allowed: running | cycling | rowing | skiing | hyrox | inline_skating | triathlon
+Allowed: running | cycling | rowing | skiing | hyrox | triathlon
 
-RULE: Only assign a sport if the abstract's PRIMARY study population or PRIMARY application
-is that sport. Do NOT assign based on physiological parameters alone.
+Only assign if the study population or primary application is that sport.
 
 Case 1 — Explicitly named single sport:
-  "marathon runners", "road cyclists", "ergometer rowers", "cross-country skiers", etc.
-  → Assign only that sport. Confidence 0.90+.
+  "marathon runners", "road cyclists", etc. → Assign only that sport. Confidence 0.90+.
 
-Case 2 — Named multi-sport or explicitly cross-sport population:
-  "cyclists and runners", "endurance athletes from multiple disciplines",
-  "triathletes", or study methods list multiple endurance sports.
-  → Assign the explicitly named sports. Confidence 0.85.
-  → "Endurance athletes" alone (without naming sports) → running + cycling only. Confidence 0.70.
+Case 2 — Named multi-sport or cross-sport:
+  "cyclists and runners", "triathletes", etc. → Assign all explicitly named sports. Confidence 0.85.
+  → "Endurance athletes" alone → running + cycling only. Confidence 0.70.
 
 Case 3 — Pure physiology, no sport population named:
-  VO2max, lactate, HRV, cardiac output, sleep, nutrition, periodization
-  studied in "trained athletes" or "recreationally active" without naming a sport.
-  → Assign running + cycling only (most common endurance research populations). Confidence 0.70.
-  → Exception — altitude papers: add skiing. Heat papers: running + cycling only.
-  → DO NOT assign rowing or skiing unless the abstract mentions them.
+  VO2max, lactate, HRV, sleep, nutrition, periodization without naming a sport.
+  → Assign running + cycling only. Confidence 0.70.
+  → Altitude papers: add skiing. DO NOT assign rowing/skiing unless mentioned.
 
-Case 4 — Injury and biomechanics:
-  Assign only the named sport. If no sport is named but injury is running-specific
-  (achilles, patellofemoral, IT band, plantar fascia, shin splints) → running only. Confidence 0.70.
-  Generic "athlete" injury papers without sport naming → do not assign any sport. Confidence 0.60.
+Case 4 — Injury/biomechanics:
+  Only assign the named sport. Running-specific injuries (achilles, IT band, PFP) → running only. Confidence 0.70.
 
-Case 5 — Movement practice population (tai chi, yoga, martial arts, qi gong, pilates):
-  These are NOT endurance sports. Do NOT assign sports[].
-  Assign movement_practices[] instead.
-  Exception: if the study explicitly tests a movement practice in endurance athletes
-  (e.g. "yoga for marathon runner recovery") → assign both the sport AND movement_practice.
+Case 5 — Movement practices (tai chi, yoga, martial arts):
+  Do NOT assign sports[]. Use movement_practices[] instead.
+  Exception: "yoga for marathon runner recovery" → assign both sport AND movement_practice.
 
-Case 6 — Sport mentioned only as comparator, context, or injury mechanism:
-  "Compared to runners, cyclists showed..." → do NOT assign running if runners are not the study population.
-  "Common in recreational athletes" → do NOT assign any sport.
-  → Assign only the sport that IS the study population.
+Case 6 — Sport mentioned only as comparator or context:
+  "Compared to runners, cyclists..." → Only assign the study population sport.
 
-BEFORE writing "sports", write "_sport_reasoning" first. This forces you to verify each assignment.
+════════════════════════════════════════
+MOVEMENT PRACTICES
+════════════════════════════════════════
 
-══════════════════════════════════════
-MOVEMENT PRACTICES — new field
-══════════════════════════════════════
+Assign if the practice is the primary intervention or study population:
 
-Assign if the paper's PRIMARY subject or study population involves these disciplines:
-
-  martial_arts  — capoeira, kung fu, wushu, aikido, judo, Brazilian jiu-jitsu,
-                  taekwondo, kendo, karate, wrestling as sport
-  mind_body     — tai chi, qi gong / qigong, mindfulness movement, somatic practices,
-                  Feldenkrais, Alexander technique
-  yoga_pilates  — yoga (any style: hatha, vinyasa, ashtanga, hot yoga, yin),
-                  pilates, barre
+  martial_arts  — capoeira, kung fu, wushu, aikido, judo, Brazilian jiu-jitsu, taekwondo, karate
+  mind_body     — tai chi, qi gong, mindfulness movement, Feldenkrais, Alexander technique
+  yoga_pilates  — yoga (all styles), pilates, barre
 
 Rules:
-  - Assign if the practice is the primary intervention OR study population.
-  - movement_practices and sports[] are NOT mutually exclusive.
-    A paper on "yoga for cyclist recovery" → sports: [cycling], movement_practices: [yoga_pilates].
-  - Do NOT assign if the practice is mentioned only in passing or as a background reference.
+  - Not mutually exclusive with sports[]. "Yoga for cyclist recovery" → both assigned.
+  - Do NOT assign if only mentioned in passing.
 
-══════════════════════════════════════
+════════════════════════════════════════
 BODY REGIONS
-══════════════════════════════════════
+════════════════════════════════════════
 
-Allowed: calves | quads | hamstrings | glutes | core | lower_back |
-  hip_flexors | knees | achilles | shoulders | neck | grip_forearms |
-  hip_abductors | ankles | it_band | foot | lats
+Allowed: calves | quads | hamstrings | glutes | core | lower_back | hip_flexors | knees | achilles | shoulders | neck | grip_forearms | hip_abductors | ankles | it_band | foot | lats
 
-Only assign regions EXPLICITLY mentioned or directly implied by the injury/intervention.
-If no body region is mentioned: return [].
+Only assign if EXPLICITLY mentioned or directly implied.
 
-Sport-region hints (apply only when a body region IS mentioned in the abstract):
+Sport-region hints (apply only when a body region IS mentioned):
   running  → calves, quads, hamstrings, glutes, core, achilles, knees, foot, it_band
   cycling  → quads, hip_flexors, lower_back, knees, neck
   rowing   → lats, core, quads, lower_back, grip_forearms, shoulders
@@ -118,48 +90,39 @@ Sport-region hints (apply only when a body region IS mentioned in the abstract):
   martial_arts → core, shoulders, hip_flexors, grip_forearms
   yoga_pilates → core, lower_back, hip_flexors, hamstrings
 
-══════════════════════════════════════
-TOPICS
-══════════════════════════════════════
+════════════════════════════════════════
+TOPICS & RESEARCH DIMENSIONS
+════════════════════════════════════════
 
-Allowed:
-  vo2max | lactate | hrv | cardiac_output | altitude | biomechanics |
-  pacing | heat_performance | fatigue | periodization | intervals |
-  strength | overtraining | sleep | active_recovery | passive_recovery |
-  hrv_recovery | carbohydrates | protein | hydration | supplements |
-  gut_health | tendon | stress_fracture | it_band | plantar_fascia |
-  knee | hamstring | prevention | psychology | pacing_strategy | pain_tolerance |
-  marathon | half_marathon | ultramarathon | trail_running | 5k_10k
+Topics:
+  vo2max | lactate | hrv | cardiac_output | altitude | biomechanics | pacing | heat_performance |
+  fatigue | periodization | intervals | strength | overtraining | sleep | active_recovery |
+  passive_recovery | hrv_recovery | carbohydrates | protein | hydration | supplements | gut_health |
+  tendon | stress_fracture | it_band | plantar_fascia | knee | hamstring | prevention | psychology |
+  pacing_strategy | pain_tolerance | marathon | half_marathon | ultramarathon | trail_running | 5k_10k
 
-══════════════════════════════════════
-RESEARCH DIMENSIONS
-══════════════════════════════════════
+Research Dimensions (assign all that apply):
+  female_athlete       — study population is primarily female athletes
+  masters_longevity    — masters athletes (35+), aging, or long-term health/performance
+  supplements          — primary focus on ergogenic aids or pharmacological interventions
+  technology_wearables — wearable devices, sensors, sports tech
+  ai_ml_research       — machine learning or AI as core methodology
+  para_sport           — Paralympic or disabled athletes
 
-Assign all that apply (empty list if none):
-  female_athlete       = study population is primarily or exclusively female athletes
-  masters_longevity    = focuses on masters athletes (35+), aging, or long-term health/performance
-  supplements          = primary focus is dietary supplements, ergogenic aids, or pharmacological interventions
-  technology_wearables = primary focus is wearable devices, sensors, biomechanical measurement, or sports tech
-  ai_ml_research       = uses machine learning or AI as a core methodology
-  para_sport           = study population includes Paralympic, disabled, or para-sport athletes
-
-══════════════════════════════════════
+════════════════════════════════════════
 OTHER FIELDS
-══════════════════════════════════════
+════════════════════════════════════════
 
 study_type: RCT | cohort | review | case_study | mechanistic | meta_analysis | cross_sectional
 
 population: recreational | trained | elite | mixed | unknown
 
-sample_size: integer only. First number that represents total participants. Null if unclear.
+sample_size: integer only. First number representing total participants. Null if unclear.
 
 evidence_level:
   1 = RCT or meta-analysis
   2 = Cohort or controlled study
-  3 = Case study or small N (< 20 participants)
+  3 = Case study or small N (< 20)
   4 = Mechanistic or narrative review
 
-Confidence:
-  0.85–1.0 = clearly and explicitly stated
-  0.60–0.84 = implied or inferred
-  0.0–0.59  = uncertain or not mentioned
+Confidence: 0.85–1.0 = explicit, 0.60–0.84 = implied, 0.0–0.59 = uncertain.

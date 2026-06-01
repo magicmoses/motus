@@ -21,7 +21,7 @@ for _name in ('.env', '.env.local'):
 logger = get_logger(__name__)
 
 MODEL = 'claude-haiku-4-5-20251001'
-MAX_TOKENS = 1024
+MAX_TOKENS = 768
 TAGGER_PROMPT = Path(__file__).parent.parent / 'prompts' / 'tagger_system.txt'
 
 _CONF_AUTO_COMMIT = 0.85
