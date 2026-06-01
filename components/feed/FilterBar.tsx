@@ -74,18 +74,20 @@ export function FilterBar() {
   const pathname = usePathname()
   const params = useSearchParams()
   const [, startTransition] = useTransition()
-  const [showAllTopics, setShowAllTopics] = useState(false)
 
-  const activeSport    = params.get('sport')
-  const activeMovement = params.get('movement') ?? ''
-  const activeTopic    = params.get('topic') ?? ''
+  const activeSport     = params.get('sport')
+  const activeMovement  = params.get('movement') ?? ''
+  const activeTopic     = params.get('topic') ?? ''
   const activeDimension = params.get('dimension') ?? ''
-  const urlSearch      = params.get('search') ?? ''
+  const urlSearch       = params.get('search') ?? ''
 
+  // Endurance sports submenu: auto-expand when a sport is active
+  const [showEndurance, setShowEndurance] = useState(!!activeSport)
+  const [showAllTopics, setShowAllTopics] = useState(false)
   const [searchInput, setSearchInput] = useState(urlSearch)
-  useEffect(() => { setSearchInput(urlSearch) }, [urlSearch])
 
-  // Auto-expand topic list if the active topic is in the extended set
+  useEffect(() => { setSearchInput(urlSearch) }, [urlSearch])
+  useEffect(() => { if (activeSport) setShowEndurance(true) }, [activeSport])
   useEffect(() => {
     if (activeTopic && !QUICK_VALUES.has(activeTopic)) setShowAllTopics(true)
   }, [activeTopic])
@@ -102,15 +104,12 @@ export function FilterBar() {
     startTransition(() => router.push(`${pathname}?${next.toString()}`))
   }
 
-  function toggleSport(sport: SportName) {
-    updateParams({ sport: activeSport === sport ? '' : sport })
-  }
-
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault()
     updateParams({ search: searchInput })
   }
 
+  const enduranceActive = !!activeSport
   const visibleTopics = showAllTopics
     ? [...TOPICS_QUICK, ...TOPICS_EXTENDED]
     : TOPICS_QUICK
@@ -118,19 +117,16 @@ export function FilterBar() {
   return (
     <div className="space-y-3 pb-5">
 
-      {/* Row 1 — Discipline: endurance sports · movement practices */}
-      <div className="flex flex-wrap items-center gap-2">
-        {SPORTS.map(({ value, label }) => (
-          <Badge
-            key={value}
-            variant={activeSport === value ? 'default' : 'outline'}
-            className="cursor-pointer select-none"
-            onClick={() => toggleSport(value)}
-          >
-            {label}
-          </Badge>
-        ))}
-        <span className="text-gray-300 select-none px-0.5">·</span>
+      {/* Row 1 — Top-level discipline categories */}
+      <div className="flex flex-wrap gap-2">
+        <Badge
+          variant={enduranceActive ? 'default' : 'outline'}
+          className="cursor-pointer select-none"
+          onClick={() => setShowEndurance(v => !v)}
+        >
+          Endurance Sports {showEndurance || enduranceActive ? ' ▴' : ' ▾'}
+        </Badge>
+
         {MOVEMENT_PRACTICES.map(({ value, label }) => (
           <Badge
             key={value}
@@ -147,9 +143,25 @@ export function FilterBar() {
         ))}
       </div>
 
-      {/* Row 2 — Running distances (conditional) */}
+      {/* Row 2 — Endurance sport chips (conditional on expand or active sport) */}
+      {(showEndurance || enduranceActive) && (
+        <div className="flex flex-wrap gap-2 pl-3 border-l-2 border-gray-100">
+          {SPORTS.map(({ value, label }) => (
+            <Badge
+              key={value}
+              variant={activeSport === value ? 'default' : 'outline'}
+              className="cursor-pointer select-none"
+              onClick={() => updateParams({ sport: activeSport === value ? '' : value, topic: '' })}
+            >
+              {label}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Row 3 — Running distances (conditional on Running selected) */}
       {activeSport === 'running' && (
-        <div className="flex flex-wrap items-center gap-2 pl-1">
+        <div className="flex flex-wrap items-center gap-2 pl-3 border-l-2 border-gray-100">
           <span className="text-xs text-gray-400 shrink-0">Distance:</span>
           {RUNNING_DISTANCES.map(({ value, label }) => (
             <Badge
@@ -164,7 +176,7 @@ export function FilterBar() {
         </div>
       )}
 
-      {/* Row 3 — Research focus */}
+      {/* Row 4 — Research focus */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-gray-400 shrink-0">Research focus:</span>
         {DIMENSIONS.map(({ value, label }) => (
@@ -183,7 +195,7 @@ export function FilterBar() {
         ))}
       </div>
 
-      {/* Row 4 — Search + topic chips + clear */}
+      {/* Row 5 — Search + topic chips */}
       <form onSubmit={handleSearchSubmit} className="space-y-2">
         <div className="flex gap-2">
           <input
@@ -197,7 +209,12 @@ export function FilterBar() {
           {hasFilters && (
             <button
               type="button"
-              onClick={() => { setSearchInput(''); setShowAllTopics(false); router.push(pathname) }}
+              onClick={() => {
+                setSearchInput('')
+                setShowEndurance(false)
+                setShowAllTopics(false)
+                router.push(pathname)
+              }}
               className="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-700 border border-gray-200 rounded-md transition-colors whitespace-nowrap"
             >
               × Clear
