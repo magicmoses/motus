@@ -26,10 +26,19 @@ def _is_duplicate(paper: dict, seen_dois: set[str], seen_hashes: set[str]) -> bo
     th = title_hash(paper.get('title', ''))
     if th in seen_hashes:
         return True
-    if doi and queries.paper_exists_by_doi(doi):
-        return True
-    if doi and queries.paper_exists_in_queue(doi):
-        return True
+    if doi:
+        if queries.paper_exists_by_doi(doi):
+            return True
+        if queries.paper_exists_in_queue(doi):
+            return True
+    else:
+        # No DOI (e.g. arXiv) — fall back to source_id for persistent cross-run dedup
+        source_id = paper.get('source_id')
+        if source_id:
+            if queries.paper_exists_by_source_id(source_id):
+                return True
+            if queries.paper_exists_in_queue_by_source_id(source_id):
+                return True
     return False
 
 

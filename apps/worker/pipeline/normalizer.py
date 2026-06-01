@@ -91,14 +91,25 @@ def _normalize_paper(raw: dict) -> dict:
         'source_id': raw.get('source_id'),
         'source_name': raw.get('source_name'),
         'published_at': published_at,
+        'citation_count': raw.get('citation_count'),
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Motus normalizer')
-    parser.add_argument('--limit', type=int, default=100,
+    parser.add_argument('--limit', type=int, default=2000,
                         help='Max queue items to process per run')
+    parser.add_argument('--retry-failed', action='store_true',
+                        help='Retry failed queue items (excludes structural failures)')
     args = parser.parse_args()
+
+    if args.retry_failed:
+        failed_items = queries.get_failed_queue_items_for_retry(limit=args.limit)
+        logger.info(f'Normalizer (retry-failed): resetting {len(failed_items)} items to pending')
+        for item in failed_items:
+            queries.reset_queue_item_to_pending(item['id'])
+        logger.info('Reset complete — run normalizer normally to process them')
+        return
 
     items = queries.get_pending_queue(limit=args.limit)
     logger.info(f'Normalizer: processing {len(items)} pending queue items')

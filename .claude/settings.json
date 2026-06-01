@@ -26,6 +26,17 @@
     ]
   },
   "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '{\"timestamp\":\"%s\",\"branch\":\"%s\",\"head\":\"%s\"}\\n' \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" \"$(git branch --show-current 2>/dev/null || echo unknown)\" \"$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\" >> \"/c/Users/ayzen/.claude/projects/C--Users-ayzen-projects-sports-science-platform/memory/session_log.jsonl\""
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write(apps/worker/**/*.py)",

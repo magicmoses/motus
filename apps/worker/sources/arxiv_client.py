@@ -36,6 +36,9 @@ ARXIV_QUERIES = [
     'all:female athlete physiology menstrual cycle endurance',
     'all:fatigue monitoring athlete training load wearable',
     'all:muscle fatigue electromyography endurance exercise',
+    'all:tai chi qigong exercise health balance aging',
+    'all:yoga athletic performance flexibility injury',
+    'all:martial arts combat sport physiology performance',
 ]
 
 

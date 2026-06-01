@@ -5,9 +5,18 @@ Designed for Railway cron: python run_pipeline.py
 import os
 import sys
 
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env first, then .env.local (allows local overrides without committing secrets).
+# Walks up from apps/worker/ to find files at the repo root too.
+_here = Path(__file__).parent
+for _name in ('.env', '.env.local'):
+    for _dir in (_here, _here.parent, _here.parent.parent):
+        _p = _dir / _name
+        if _p.exists():
+            load_dotenv(_p, override=False)
+            break
 
 from utils.logger import get_logger
 
@@ -26,6 +35,9 @@ def main() -> None:
     _check_env()
 
     logger.info('=== MOTUS PIPELINE START ===')
+
+    from utils.health_alert import check_and_log as health_check
+    health_check()
 
     # Stage 1: Researcher
     logger.info('--- Stage 1: Researcher ---')
@@ -51,6 +63,14 @@ def main() -> None:
     logger.info('--- Stage 4: Verifier ---')
     from pipeline.verifier import main as verifier_main
     verifier_main()
+
+    # Stage 5: Citation updater (best-effort — does not block on failure)
+    logger.info('--- Stage 5: Citation Updater ---')
+    try:
+        from pipeline.citation_updater import main as citation_updater_main
+        citation_updater_main()
+    except Exception as e:
+        logger.warning(f'Citation updater failed (non-fatal): {e}')
 
     logger.info('=== MOTUS PIPELINE COMPLETE ===')
 

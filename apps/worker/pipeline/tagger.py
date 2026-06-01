@@ -11,7 +11,13 @@ from db import queries
 from utils.cost_tracker import log_call
 from utils.logger import get_logger
 
-load_dotenv()
+_here = Path(__file__).parent
+for _name in ('.env', '.env.local'):
+    for _dir in (_here, _here.parent, _here.parent.parent, _here.parent.parent.parent):
+        _p = _dir / _name
+        if _p.exists():
+            load_dotenv(_p, override=False)
+            break
 logger = get_logger(__name__)
 
 MODEL = 'claude-haiku-4-5-20251001'
@@ -22,6 +28,13 @@ _CONF_AUTO_COMMIT = 0.85
 _CONF_NEEDS_REVIEW = 0.60
 
 _ALLOWED_SPORTS = frozenset({'running', 'cycling', 'rowing', 'skiing', 'hyrox', 'inline_skating', 'triathlon'})
+_ALLOWED_RESEARCH_DIMENSIONS = frozenset({
+    'female_athlete', 'masters_longevity', 'supplements',
+    'technology_wearables', 'ai_ml_research', 'para_sport',
+})
+_ALLOWED_MOVEMENT_PRACTICES = frozenset({
+    'martial_arts', 'mind_body', 'yoga_pilates',
+})
 _ALLOWED_BODY_REGIONS = frozenset({
     'calves', 'quads', 'hamstrings', 'glutes', 'core', 'lower_back',
     'hip_flexors', 'knees', 'achilles', 'shoulders', 'neck', 'grip_forearms',
@@ -50,6 +63,17 @@ def _extract_json(text: str) -> str:
 
 def _filter_allowed(values: list, allowed: frozenset) -> list:
     return [v for v in (values or []) if v in allowed]
+
+
+def _parse_sample_size(value) -> int | None:
+    """Extract a clean integer from sample_size — LLM sometimes returns strings like
+    'n=27 (13 canines, 9 humans)'. Takes the first integer found, or None."""
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    m = re.search(r'\d+', str(value))
+    return int(m.group()) if m else None
 
 
 def _determine_status(confidence: dict) -> str:
@@ -105,9 +129,24 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
     confidence: dict = data.get('confidence') or {}
 
     # Apply confidence thresholds — drop fields below needs_review threshold
+    # Log multi-perspective reasoning for debugging — not stored in DB
+    perspectives = data.get('_perspectives') or {}
+    if perspectives:
+        logger.debug(
+            f'Perspectives — athlete: {perspectives.get("athlete", "")} | '
+            f'researcher: {perspectives.get("researcher", "")} | '
+            f'clinician: {perspectives.get("clinician", "")} | '
+            f'physiologist: {perspectives.get("physiologist", "")}'
+        )
+    sport_reasoning = data.get('_sport_reasoning', '')
+    if sport_reasoning:
+        logger.debug(f'Sport reasoning: {sport_reasoning}')
+
     sports = _filter_allowed(data.get('sports'), _ALLOWED_SPORTS)
     if (confidence.get('sports') or 0.0) < _CONF_NEEDS_REVIEW:
         sports = []
+
+    movement_practices = _filter_allowed(data.get('movement_practices'), _ALLOWED_MOVEMENT_PRACTICES)
 
     body_regions = _filter_allowed(data.get('body_regions'), _ALLOWED_BODY_REGIONS)
     if (confidence.get('body_regions') or 0.0) < _CONF_NEEDS_REVIEW:
@@ -116,6 +155,8 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
     topics = _filter_allowed(data.get('topics'), _ALLOWED_TOPICS)
     if (confidence.get('topics') or 0.0) < _CONF_NEEDS_REVIEW:
         topics = []
+
+    research_dimensions = _filter_allowed(data.get('research_dimensions'), _ALLOWED_RESEARCH_DIMENSIONS)
 
     evidence_level = data.get('evidence_level')
     if (confidence.get('evidence_level') or 0.0) < _CONF_NEEDS_REVIEW:
@@ -131,11 +172,13 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
 
     tags = {
         'sports': sports,
+        'movement_practices': movement_practices,
         'body_regions': body_regions,
         'topics': topics,
+        'research_dimensions': research_dimensions,
         'study_type': study_type,
         'population': population,
-        'sample_size': data.get('sample_size'),
+        'sample_size': _parse_sample_size(data.get('sample_size')),
         'evidence_level': evidence_level,
         'confidence_sports': confidence.get('sports'),
         'confidence_regions': confidence.get('body_regions'),
@@ -147,13 +190,27 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Motus tagger stage')
-    parser.add_argument('--limit', type=int, default=20,
+    parser.add_argument('--limit', type=int, default=100,
                         help='Max enrichments to process per run')
+    parser.add_argument('--backfill-dimensions', action='store_true',
+                        help='Retrofit research_dimensions onto already-tagged enrichments '
+                             'without touching sports/topics/evidence_level')
+    parser.add_argument('--retag-all', action='store_true',
+                        help='Full re-tag all committed enrichments with the current prompt. '
+                             'Use after significant prompt changes.')
     args = parser.parse_args()
 
     client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
-    enrichments = queries.get_enrichments_pending_tags(limit=args.limit)
-    logger.info(f'Tagger: processing {len(enrichments)} enrichments')
+
+    if args.retag_all:
+        enrichments = queries.get_all_tagged_enrichments(limit=args.limit)
+        logger.info(f'Tagger (retag-all): {len(enrichments)} enrichments to fully re-tag')
+    elif args.backfill_dimensions:
+        enrichments = queries.get_enrichments_missing_dimensions(limit=args.limit)
+        logger.info(f'Tagger (backfill-dimensions): {len(enrichments)} enrichments to update')
+    else:
+        enrichments = queries.get_enrichments_pending_tags(limit=args.limit)
+        logger.info(f'Tagger: processing {len(enrichments)} enrichments')
 
     succeeded = 0
     failed = 0
@@ -169,20 +226,32 @@ def main() -> None:
 
         if tags is None:
             logger.warning(f'Tagger failed: {title_preview}')
-            queries.update_enrichment(enrichment_id, {'enrichment_status': 'failed'})
+            if not args.backfill_dimensions:
+                queries.update_enrichment(enrichment_id, {'enrichment_status': 'failed'})
             failed += 1
             continue
 
-        status = _determine_status({
-            'sports': tags.get('confidence_sports'),
-            'topics': tags.get('confidence_topics'),
-            'evidence_level': tags.get('confidence_evidence'),
-        })
-        tags['enrichment_status'] = status
 
-        queries.update_enrichment(enrichment_id, tags)
+        if args.backfill_dimensions:
+            # Only write new fields — never overwrite reviewed sports/topics/status
+            queries.update_enrichment(enrichment_id, {
+                'research_dimensions': tags.get('research_dimensions', []),
+                'movement_practices': tags.get('movement_practices', []),
+            })
+            logger.info(f'Dimensions backfilled: {title_preview}')
+        else:
+            # Full write — covers both normal tagging and --retag-all
+            status = _determine_status({
+                'sports': tags.get('confidence_sports'),
+                'topics': tags.get('confidence_topics'),
+                'evidence_level': tags.get('confidence_evidence'),
+            })
+            tags['enrichment_status'] = status
+            queries.update_enrichment(enrichment_id, tags)
+            mode = 'Re-tagged' if args.retag_all else 'Tagged'
+            logger.info(f'{mode} [{status}]: {title_preview}')
+
         succeeded += 1
-        logger.info(f'Tagged [{status}]: {title_preview}')
 
     logger.info(f'Tagger complete: succeeded={succeeded} failed={failed}')
 

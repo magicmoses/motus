@@ -142,8 +142,27 @@ ENDURANCE_QUERIES = [
     '"mental fatigue"[TIAB] AND "endurance"[TIAB]',
     '"pacing strategy"[TIAB] AND "endurance"[TIAB]',
     '"psychological"[TIAB] AND "endurance performance"[TIAB]',
+    # MARTIAL ARTS (6)
+    '"martial arts"[TIAB] AND ("physiology" OR "performance" OR "fitness" OR "training adaptation")[TIAB]',
+    '"judo"[TIAB] AND ("physiology" OR "performance" OR "training")[TIAB]',
+    '"taekwondo"[TIAB] AND ("physiology" OR "performance" OR "training")[TIAB]',
+    '"Brazilian jiu-jitsu"[TIAB] AND ("physiology" OR "conditioning")[TIAB]',
+    '"capoeira"[TIAB]',
+    '"wushu"[TIAB] OR "kung fu"[TIAB] AND "exercise"[TIAB]',
+    # MIND-BODY (5)
+    '"tai chi"[TIAB] AND ("exercise" OR "balance" OR "cardiovascular" OR "longevity" OR "aging")[TIAB]',
+    '"qigong"[TIAB] AND ("exercise" OR "health" OR "performance" OR "rehabilitation")[TIAB]',
+    '"mind-body exercise"[TIAB]',
+    '"tai chi"[TIAB] AND "older adults"[TIAB]',
+    '"qigong"[TIAB] AND "older adults"[TIAB]',
+    # YOGA AND PILATES (5)
+    '"yoga"[TIAB] AND ("athletic performance" OR "endurance" OR "flexibility" OR "injury prevention")[TIAB]',
+    '"yoga"[TIAB] AND ("recovery" OR "muscle" OR "fatigue")[TIAB]',
+    '"pilates"[TIAB] AND ("core strength" OR "athletic" OR "performance" OR "rehabilitation")[TIAB]',
+    '"hot yoga"[TIAB] OR "bikram yoga"[TIAB]',
+    '"yoga"[TIAB] AND "randomized"[TIAB] AND "exercise"[TIAB]',
 ]
-# Total: 107 queries
+# Total: 123 queries
 
 
 class PubMedClient:

@@ -18,10 +18,11 @@ CREATE TABLE papers (
   authors     text[],
   journal     text,
   source_url  text,
-  source_id   text,                    -- PubMed PMID or Semantic Scholar ID
-  source_name text,                    -- 'pubmed' | 'semantic_scholar' | 'rss'
+  source_id    text,                   -- PubMed PMID or Semantic Scholar ID
+  source_name  text,                   -- 'pubmed' | 'semantic_scholar' | 'rss'
   published_at date,
-  created_at  timestamptz DEFAULT now()
+  citation_count int,                  -- from Semantic Scholar (null for PubMed/arXiv)
+  created_at   timestamptz DEFAULT now()
 );
 ```
 
@@ -40,6 +41,8 @@ CREATE TABLE enrichments (
   sample_size         int,
   population          text,
   practical_relevance boolean DEFAULT true,
+  movement_practices  text[] DEFAULT '{}',  -- martial_arts | mind_body | yoga_pilates (NEVER mixed with sports[])
+  research_dimensions text[] DEFAULT '{}',  -- cross-cutting lenses: female_athlete | masters_longevity | supplements | technology_wearables | ai_ml_research | para_sport
   confidence_sports      float CHECK (confidence_sports BETWEEN 0 AND 1),
   confidence_regions     float CHECK (confidence_regions BETWEEN 0 AND 1),
   confidence_topics      float CHECK (confidence_topics BETWEEN 0 AND 1),

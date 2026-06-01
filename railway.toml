@@ -4,4 +4,4 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
 [environments.production.deploy]
-cronSchedule = "0 6 * * *"
+cronSchedule = "0 6 */2 * *"

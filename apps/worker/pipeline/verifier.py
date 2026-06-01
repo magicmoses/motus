@@ -36,6 +36,7 @@ def _verify_enrichment(enrichment: dict) -> tuple[str, str]:
     doi = paper.get('doi') or ''
     summary = enrichment.get('summary') or ''
     sports = enrichment.get('sports') or []
+    movement_practices = enrichment.get('movement_practices') or []
     evidence_level = enrichment.get('evidence_level')
 
     conf_sports = enrichment.get('confidence_sports') or 0.0
@@ -50,8 +51,8 @@ def _verify_enrichment(enrichment: dict) -> tuple[str, str]:
     if doi and not _DOI_RE.match(doi):
         reasons.append('invalid DOI format')
 
-    if not sports:
-        reasons.append('no sport tag')
+    if not sports and not movement_practices:
+        reasons.append('no sport or movement practice tag')
 
     if evidence_level is None:
         reasons.append('evidence level missing')
@@ -70,7 +71,7 @@ def _verify_enrichment(enrichment: dict) -> tuple[str, str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Motus verifier stage')
-    parser.add_argument('--limit', type=int, default=50,
+    parser.add_argument('--limit', type=int, default=500,
                         help='Max enrichments to verify per run')
     args = parser.parse_args()
 

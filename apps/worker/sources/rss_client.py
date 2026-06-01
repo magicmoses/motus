@@ -12,15 +12,23 @@ load_dotenv()
 logger = get_logger(__name__)
 
 RSS_FEEDS = [
-    'https://bjsm.bmj.com/rss/current.xml',
-    'https://journals.physiology.org/action/showFeed?type=etoc&feed=rss&jc=jappl',
-    'https://journals.humankinetics.com/rss/journals/ijsnem',
-    'https://www.tandfonline.com/action/showFeed?type=etoc&feed=rss&jc=tejs20',
-    'https://link.springer.com/search.rss?query=endurance+exercise&facet-journal-id=40279',
-    'https://www.frontiersin.org/journals/physiology/rss',
+    # Tier 1 — high-impact sports science journals
+    'https://bjsm.bmj.com/rss/current.xml',                                                    # BJSM
+    'https://journals.physiology.org/action/showFeed?type=etoc&feed=rss&jc=jappl',             # JAP
+    'https://journals.humankinetics.com/rss/journals/ijsnem',                                   # IJSNEM
+    'https://journals.humankinetics.com/rss/journals/ijspp',                                    # IJSPP
+    'https://link.springer.com/search.rss?query=endurance+exercise&facet-journal-id=40279',    # Sports Medicine
+    'https://www.frontiersin.org/journals/physiology/rss',                                       # Frontiers Physiology
+    # Tier 2 — additional coverage
+    'https://journals.lww.com/acsm-msse/rss',                                                   # MSSE (LWW)
+    'https://onlinelibrary.wiley.com/action/showFeed?jc=1600-0838&type=etoc&feed=rss',         # SJMSS (Wiley)
+    # Disabled — verify URL before enabling
+    # 'https://link.springer.com/search.rss?query=&facet-journal-id=421',                      # EJAP (need to confirm journal ID)
+    # 'https://link.springer.com/search.rss?query=&facet-journal-id=40798',                    # Sports Medicine Open (need to confirm)
+    # 'https://www.tandfonline.com/action/showFeed?type=etoc&feed=rss&jc=tejs20',              # EJSS — returned 0 entries, disabled
 ]
 
-DOI_PATTERN = re.compile(r'10\.\d{4,}/[^\s"<>]+')
+DOI_PATTERN = re.compile(r'10\.\d{4,}/[^\s"<>?#]+')
 
 
 class RSSClient:
@@ -43,7 +51,18 @@ class RSSClient:
         results = []
         for entry in feed.entries:
             link = getattr(entry, 'link', '') or ''
-            doi = self._extract_doi(link)
+
+            # Extract DOI from multiple possible locations in feed metadata
+            doi = (
+                self._extract_doi(link)
+                or self._extract_doi(getattr(entry, 'id', '') or '')
+                or getattr(entry, 'prism_doi', None)
+                or getattr(entry, 'dc_identifier', None)
+            )
+            if doi:
+                doi = doi.strip()
+
+            # Try Crossref for full metadata (abstract, authors, journal)
             if doi:
                 enriched = self.crossref.lookup_doi(doi)
                 if enriched:
@@ -51,22 +70,40 @@ class RSSClient:
                     enriched['source_name'] = 'rss'
                     results.append(enriched)
                     continue
-            # Fallback: minimal record from RSS entry alone
-            title = getattr(entry, 'title', '')
-            if title:
-                results.append({
-                    'title': title,
-                    'abstract': None,
-                    'authors': [],
-                    'journal': None,
-                    'doi': None,
-                    'source_id': None,
-                    'source_name': 'rss',
-                    'source_url': link,
-                    'published_at': getattr(entry, 'published', None),
-                })
+
+            # Fallback: build record from feed entry directly.
+            # feedparser extracts abstract as entry.summary — use it.
+            title = getattr(entry, 'title', '') or ''
+            if not title:
+                continue
+
+            abstract = getattr(entry, 'summary', None) or getattr(entry, 'description', None)
+            # Strip HTML tags from abstract if present
+            if abstract:
+                abstract = re.sub(r'<[^>]+>', ' ', abstract).strip()
+                abstract = re.sub(r'\s+', ' ', abstract)
+
+            authors = []
+            for a in getattr(entry, 'authors', []):
+                name = a.get('name', '')
+                if name:
+                    authors.append(name)
+
+            results.append({
+                'title': title,
+                'abstract': abstract or None,
+                'authors': authors,
+                'journal': getattr(feed.feed, 'title', None),
+                'doi': doi,
+                'source_id': doi,
+                'source_name': 'rss',
+                'source_url': link,
+                'published_at': getattr(entry, 'published', None),
+            })
         return results
 
     def _extract_doi(self, url: str) -> Optional[str]:
         m = DOI_PATTERN.search(url)
-        return m.group() if m else None
+        if not m:
+            return None
+        return m.group().rstrip('.,;)')

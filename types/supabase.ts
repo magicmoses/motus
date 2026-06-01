@@ -28,6 +28,8 @@ export type Database = {
           paper_id: string
           population: string | null
           practical_relevance: boolean | null
+          movement_practices: string[] | null
+          research_dimensions: string[] | null
           sample_size: number | null
           sports: string[] | null
           study_type: string | null
@@ -48,6 +50,8 @@ export type Database = {
           paper_id: string
           population?: string | null
           practical_relevance?: boolean | null
+          movement_practices?: string[] | null
+          research_dimensions?: string[] | null
           sample_size?: number | null
           sports?: string[] | null
           study_type?: string | null
@@ -68,6 +72,8 @@ export type Database = {
           paper_id?: string
           population?: string | null
           practical_relevance?: boolean | null
+          movement_practices?: string[] | null
+          research_dimensions?: string[] | null
           sample_size?: number | null
           sports?: string[] | null
           study_type?: string | null
@@ -116,6 +122,7 @@ export type Database = {
         Row: {
           abstract: string | null
           authors: string[] | null
+          citation_count: number | null
           created_at: string | null
           doi: string | null
           id: string
@@ -129,6 +136,7 @@ export type Database = {
         Insert: {
           abstract?: string | null
           authors?: string[] | null
+          citation_count?: number | null
           created_at?: string | null
           doi?: string | null
           id?: string
@@ -142,6 +150,7 @@ export type Database = {
         Update: {
           abstract?: string | null
           authors?: string[] | null
+          citation_count?: number | null
           created_at?: string | null
           doi?: string | null
           id?: string

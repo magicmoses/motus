@@ -9,7 +9,13 @@ from db import queries
 from utils.cost_tracker import log_call
 from utils.logger import get_logger
 
-load_dotenv()
+_here = Path(__file__).parent
+for _name in ('.env', '.env.local'):
+    for _dir in (_here, _here.parent, _here.parent.parent, _here.parent.parent.parent):
+        _p = _dir / _name
+        if _p.exists():
+            load_dotenv(_p, override=False)
+            break
 logger = get_logger(__name__)
 
 MODEL = 'claude-haiku-4-5-20251001'
@@ -107,12 +113,26 @@ def generate_summary(client: anthropic.Anthropic, paper: dict) -> tuple[str | No
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Motus writer stage')
-    parser.add_argument('--limit', type=int, default=20,
+    parser.add_argument('--limit', type=int, default=100,
                         help='Max papers to process per run')
+    parser.add_argument('--retry-failed', action='store_true',
+                        help='Retry papers whose writer enrichment previously failed')
     args = parser.parse_args()
 
     client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
-    papers = queries.get_papers_without_enrichment(limit=args.limit)
+
+    if args.retry_failed:
+        failed = queries.get_failed_enrichments_for_writer_retry(limit=args.limit)
+        logger.info(f'Writer (retry-failed): deleting {len(failed)} failed enrichments for re-attempt')
+        for e in failed:
+            queries.delete_enrichment(e['id'])
+        logger.info('Deleted — re-running writer on those papers now')
+        paper_ids = {e['paper_id'] for e in failed}
+        papers_raw = queries.get_papers_without_enrichment(limit=len(paper_ids) + 10)
+        papers = [p for p in papers_raw if p['id'] in paper_ids]
+    else:
+        papers = queries.get_papers_without_enrichment(limit=args.limit)
+
     logger.info(f'Writer: processing {len(papers)} papers')
 
     succeeded = 0

@@ -42,8 +42,10 @@ JSON schema (response_format: json_schema):
 ```
 
 Enums:
-- sports: running | cycling | rowing | skiing | hyrox | inline_skating
+- sports: running | cycling | rowing | skiing | hyrox | inline_skating | triathlon
   IMPORTANT: assign multiple sports for cross-sport papers (see tagger_system.txt rules)
+- research_dimensions (cross-cutting lenses, separate from topics — assign all that apply):
+    female_athlete | masters_longevity | supplements | technology_wearables | ai_ml_research | para_sport
 - study_type: RCT | cohort | review | case_study | mechanistic | meta_analysis | cross_sectional
 - population: recreational | trained | elite | mixed | unknown
 - evidence_level: 1–4 (see ingestion-pipeline skill)

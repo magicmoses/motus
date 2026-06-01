@@ -1,5 +1,7 @@
 import os
+import re
 import time
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
@@ -50,13 +52,25 @@ SS_QUERIES = [
     'detraining retraining aerobic capacity endurance',
     'wearable technology training load monitoring athlete',
     'bone stress injury runner athlete load',
+    # MARTIAL ARTS
+    'martial arts physiology performance training adaptation',
+    'judo taekwondo combat sport physiology conditioning',
+    'capoeira Brazilian jiu-jitsu physical fitness',
+    # MIND-BODY
+    'tai chi exercise balance cardiovascular aging longevity',
+    'qigong health exercise intervention older adults',
+    'mind body exercise movement health outcomes',
+    # YOGA AND PILATES
+    'yoga athletic performance flexibility injury prevention recovery',
+    'pilates core stability athletic performance rehabilitation',
 ]
 
 
 class SemanticScholarClient:
     def __init__(self) -> None:
         self.api_key: str = os.environ.get('SEMANTIC_SCHOLAR_API_KEY', '').strip()
-        self.delay: float = 1.1
+        # With key: 100 req/min → 1.1s safe. Without key: 100 req/5min → 3s required.
+        self.delay: float = 1.1 if self.api_key else 3.0
 
     def _check_key(self) -> bool:
         if not self.api_key:
@@ -119,10 +133,52 @@ class SemanticScholarClient:
                 'source_name': 'semantic_scholar',
                 'source_url': f'https://www.semanticscholar.org/paper/{paper_id}' if paper_id else None,
                 'published_at': item.get('publicationDate'),
+                'citation_count': item.get('citationCount'),
             }
         except Exception as e:
             logger.error(f'Semantic Scholar normalize error: {e}')
             return None
+
+    def lookup_citation_count(self, paper: dict) -> Optional[int]:
+        """
+        Fetch citation count for a single paper via SS paper lookup API.
+        Supports PubMed (DOI or PMID), arXiv (arXiv ID), and RSS (DOI).
+        Returns None if the paper cannot be found or the request fails.
+        """
+        identifier = self._build_identifier(paper)
+        if not identifier:
+            return None
+        try:
+            resp = httpx.get(
+                BASE_URL + f'paper/{identifier}',
+                params={'fields': 'citationCount'},
+                headers=self._get_headers(),
+                timeout=15,
+            )
+            time.sleep(self.delay)
+            if resp.status_code == 404:
+                return None
+            resp.raise_for_status()
+            return resp.json().get('citationCount')
+        except Exception as e:
+            logger.warning(f'SS citation lookup failed for {identifier}: {e}')
+            return None
+
+    def _build_identifier(self, paper: dict) -> Optional[str]:
+        """Build a Semantic Scholar paper identifier from available paper fields."""
+        doi = paper.get('doi')
+        if doi:
+            return f'DOI:{doi}'
+        source_name = paper.get('source_name', '')
+        source_id = paper.get('source_id', '') or ''
+        if source_name == 'pubmed' and source_id:
+            return f'PMID:{source_id}'
+        if source_name == 'arxiv' and source_id:
+            # source_id is the full arXiv URL: http://arxiv.org/abs/2401.12345v2
+            m = re.search(r'arxiv\.org/abs/([^v\s]+)', source_id, re.IGNORECASE)
+            if m:
+                return f'ARXIV:{m.group(1)}'
+        return None
 
     def search_all_queries(self) -> list[dict]:
         if not self._check_key():

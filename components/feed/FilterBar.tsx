@@ -64,6 +64,21 @@ const BODY_REGIONS = [
   { value: 'foot', label: 'Foot' },
 ]
 
+const MOVEMENT_PRACTICES: { value: string; label: string }[] = [
+  { value: 'martial_arts',  label: 'Martial Arts' },
+  { value: 'mind_body',     label: 'Mind-Body' },
+  { value: 'yoga_pilates',  label: 'Yoga & Pilates' },
+]
+
+const DIMENSIONS: { value: string; label: string }[] = [
+  { value: 'female_athlete',      label: 'Women' },
+  { value: 'masters_longevity',   label: 'Longevity' },
+  { value: 'supplements',         label: 'Supplements' },
+  { value: 'technology_wearables',label: 'Tech & Wearables' },
+  { value: 'ai_ml_research',      label: 'AI / ML' },
+  { value: 'para_sport',          label: 'Para Sport' },
+]
+
 const SELECT_CLASS =
   'px-3 py-1.5 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-700'
 
@@ -74,14 +89,16 @@ export function FilterBar() {
   const [, startTransition] = useTransition()
 
   const activeSport = params.get('sport')
+  const activeMovement = params.get('movement') ?? ''
   const activeTopic = params.get('topic') ?? ''
   const activeRegion = params.get('region') ?? ''
+  const activeDimension = params.get('dimension') ?? ''
   const urlSearch = params.get('search') ?? ''
 
   const [searchInput, setSearchInput] = useState(urlSearch)
   useEffect(() => { setSearchInput(urlSearch) }, [urlSearch])
 
-  const hasFilters = !!(activeSport || activeTopic || activeRegion || urlSearch)
+  const hasFilters = !!(activeSport || activeMovement || activeTopic || activeRegion || activeDimension || urlSearch)
 
   function updateParams(updates: Record<string, string>) {
     const next = new URLSearchParams(params.toString())
@@ -131,6 +148,34 @@ export function FilterBar() {
           ))}
         </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-400 shrink-0">Movement:</span>
+        {MOVEMENT_PRACTICES.map(({ value, label }) => (
+          <Badge
+            key={value}
+            variant={activeMovement === value ? 'default' : 'outline'}
+            className={`cursor-pointer select-none text-xs ${activeMovement !== value ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+            onClick={() => updateParams({ movement: activeMovement === value ? '' : value })}
+          >
+            {label}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-400 shrink-0">Lens:</span>
+        {DIMENSIONS.map(({ value, label }) => (
+          <Badge
+            key={value}
+            variant={activeDimension === value ? 'default' : 'outline'}
+            className={`cursor-pointer select-none text-xs ${activeDimension !== value ? 'border-violet-200 text-violet-700 hover:bg-violet-50' : 'bg-violet-600 hover:bg-violet-700'}`}
+            onClick={() => updateParams({ dimension: activeDimension === value ? '' : value })}
+          >
+            {label}
+          </Badge>
+        ))}
+      </div>
 
       <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-2 items-center">
         <input

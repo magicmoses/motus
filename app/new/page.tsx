@@ -11,34 +11,40 @@ const PAGE_SIZE = 20
 interface Props {
   searchParams: Promise<{
     sport?: string
+    movement?: string
     topic?: string
     region?: string
+    dimension?: string
     search?: string
     page?: string
   }>
 }
 
 async function PaperFeed({
-  sport, topic, region, search, page,
+  sport, movement, topic, region, dimension, search, page,
 }: {
-  sport?: string; topic?: string; region?: string; search?: string; page: number
+  sport?: string; movement?: string; topic?: string; region?: string; dimension?: string; search?: string; page: number
 }) {
   const supabase = await createClient()
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
   let countQ = supabase.from('enriched_papers').select('id', { count: 'exact', head: true })
-  if (sport)  countQ = countQ.contains('sports', [sport])
-  if (topic)  countQ = countQ.contains('topics', [topic])
-  if (region) countQ = countQ.contains('body_regions', [region])
+  if (sport)     countQ = countQ.contains('sports', [sport])
+  if (movement)  countQ = countQ.contains('movement_practices', [movement])
+  if (topic)     countQ = countQ.contains('topics', [topic])
+  if (region)    countQ = countQ.contains('body_regions', [region])
+  if (dimension) countQ = countQ.contains('research_dimensions', [dimension])
 
   let dataQ = supabase.from('enriched_papers').select('*')
-  if (sport)  dataQ = dataQ.contains('sports', [sport])
-  if (topic)  dataQ = dataQ.contains('topics', [topic])
-  if (region) dataQ = dataQ.contains('body_regions', [region])
-  if (search) dataQ = dataQ.ilike('title', `%${search}%`)
+  if (sport)     dataQ = dataQ.contains('sports', [sport])
+  if (movement)  dataQ = dataQ.contains('movement_practices', [movement])
+  if (topic)     dataQ = dataQ.contains('topics', [topic])
+  if (region)    dataQ = dataQ.contains('body_regions', [region])
+  if (dimension) dataQ = dataQ.contains('research_dimensions', [dimension])
+  if (search)    dataQ = dataQ.ilike('title', `%${search}%`)
 
-  const [{ count }, { data, error }] = await Promise.all([
+  const [countRes, { data, error }] = await Promise.all([
     countQ,
     dataQ
       .order('published_at', { ascending: false, nullsFirst: false })
@@ -46,9 +52,11 @@ async function PaperFeed({
       .range(from, to),
   ])
 
-  if (error) {
-    return <p className="text-red-500 text-sm">Failed to load papers: {error.message}</p>
+  if (error || countRes.error) {
+    return <p className="text-red-500 text-sm">Failed to load papers: {(error ?? countRes.error)!.message}</p>
   }
+
+  const count = countRes.count
 
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -62,7 +70,7 @@ async function PaperFeed({
         total={total}
         pageSize={PAGE_SIZE}
         basePath="/new"
-        params={{ sport, topic, region, search }}
+        params={{ sport, movement, topic, region, dimension, search }}
       />
       <EvidenceLegend />
     </>
@@ -70,7 +78,7 @@ async function PaperFeed({
 }
 
 export default async function NewPage({ searchParams }: Props) {
-  const { sport, topic, region, search, page: pageParam } = await searchParams
+  const { sport, movement, topic, region, dimension, search, page: pageParam } = await searchParams
   const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
 
   return (
@@ -81,7 +89,7 @@ export default async function NewPage({ searchParams }: Props) {
         <FilterBar />
       </Suspense>
       <Suspense fallback={<p className="text-gray-400 text-sm">Loading&hellip;</p>}>
-        <PaperFeed sport={sport} topic={topic} region={region} search={search} page={page} />
+        <PaperFeed sport={sport} movement={movement} topic={topic} region={region} dimension={dimension} search={search} page={page} />
       </Suspense>
     </main>
   )
