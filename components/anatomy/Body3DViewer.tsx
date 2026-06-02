@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense as ReactSuspense } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Html } from '@react-three/drei'
+import { OrbitControls, useGLTF, Html } from '@react-three/drei'
 import * as THREE from 'three'
 
 const RUNNING_COLORS = {
@@ -23,128 +23,89 @@ const RUNNING_MUSCLES = {
   achilles: { label: 'Achilles', emphasis: 'stabilizer', y: -0.65, x: 0 },
 }
 
-function Body() {
+function getMuscleCategory(
+  position: THREE.Vector3
+): { category: 'primary' | 'secondary' | 'stabilizer' | 'other'; name?: string } {
+  if (position.y < -0.1) {
+    if (position.z < -0.05) {
+      return { category: 'primary', name: 'quads' };
+    }
+    if (position.z > 0.05) {
+      return { category: 'secondary', name: 'hamstrings' };
+    }
+    if (Math.abs(position.x) > 0.08) {
+      return { category: 'secondary', name: 'hip_flexors' };
+    }
+  }
+
+  if (position.y > -0.1 && position.y < 0.15) {
+    if (Math.abs(position.z) < 0.08) {
+      return { category: 'primary', name: 'core' };
+    }
+    if (position.z > 0.08) {
+      return { category: 'stabilizer', name: 'lower_back' };
+    }
+  }
+
+  if (position.y < -0.55) {
+    return { category: 'stabilizer', name: 'achilles' };
+  }
+
+  return { category: 'other' };
+}
+
+function Model() {
+  const group = useRef<THREE.Group>(null);
+  const gltf = useGLTF('/models/myology.glb');
+  const { scene } = gltf;
+
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (!child.geometry.boundingBox) {
+          child.geometry.computeBoundingBox();
+        }
+
+        if (child.geometry.boundingBox) {
+          const center = new THREE.Vector3();
+          child.geometry.boundingBox.getCenter(center);
+          const { category } = getMuscleCategory(center);
+
+          const colorHex =
+            category === 'primary'
+              ? RUNNING_COLORS.primary
+              : category === 'secondary'
+                ? RUNNING_COLORS.secondary
+                : category === 'stabilizer'
+                  ? RUNNING_COLORS.stabilizer
+                  : '#aaaaaa';
+
+          if (child.material) {
+            const materials = Array.isArray(child.material)
+              ? child.material
+              : [child.material];
+            materials.forEach((mat) => {
+              if (
+                mat instanceof THREE.MeshStandardMaterial ||
+                mat instanceof THREE.MeshPhongMaterial
+              ) {
+                mat.color.setStyle(colorHex);
+                mat.emissive.setStyle(
+                  category !== 'other' ? colorHex : '#000000'
+                );
+                mat.emissiveIntensity = category !== 'other' ? 0.2 : 0;
+              }
+            });
+          }
+        }
+      }
+    });
+  }, [scene]);
+
   return (
-    <group>
-      {/* Head */}
-      <mesh position={[0, 0.25, 0]}>
-        <sphereGeometry args={[0.1, 32, 32]} />
-        <meshStandardMaterial color="#999999" metalness={0.1} roughness={0.8} />
-      </mesh>
+    <group ref={group}>
+      <primitive object={scene} scale={1} position={[0, 0, 0]} />
 
-      {/* Neck */}
-      <mesh position={[0, 0.15, 0]}>
-        <cylinderGeometry args={[0.05, 0.08, 0.08]} />
-        <meshStandardMaterial color="#aaaaaa" metalness={0.1} roughness={0.8} />
-      </mesh>
-
-      {/* Torso - Core (primary) */}
-      <mesh position={[0, 0.05, 0]}>
-        <boxGeometry args={[0.16, 0.28, 0.1]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.primary}
-          emissive={RUNNING_COLORS.primary}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Lower back (stabilizer) */}
-      <mesh position={[0, 0, 0.09]}>
-        <boxGeometry args={[0.15, 0.15, 0.08]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.stabilizer}
-          emissive={RUNNING_COLORS.stabilizer}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Left Quad (primary) */}
-      <mesh position={[-0.1, -0.15, -0.06]}>
-        <boxGeometry args={[0.09, 0.22, 0.09]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.primary}
-          emissive={RUNNING_COLORS.primary}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Right Quad (primary) */}
-      <mesh position={[0.1, -0.15, -0.06]}>
-        <boxGeometry args={[0.09, 0.22, 0.09]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.primary}
-          emissive={RUNNING_COLORS.primary}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Left Hamstring (secondary) */}
-      <mesh position={[-0.1, -0.15, 0.07]}>
-        <boxGeometry args={[0.09, 0.18, 0.09]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.secondary}
-          emissive={RUNNING_COLORS.secondary}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Right Hamstring (secondary) */}
-      <mesh position={[0.1, -0.15, 0.07]}>
-        <boxGeometry args={[0.09, 0.18, 0.09]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.secondary}
-          emissive={RUNNING_COLORS.secondary}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Left Calf (primary) */}
-      <mesh position={[-0.1, -0.38, -0.02]}>
-        <boxGeometry args={[0.08, 0.16, 0.08]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.primary}
-          emissive={RUNNING_COLORS.primary}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Right Calf (primary) */}
-      <mesh position={[0.1, -0.38, -0.02]}>
-        <boxGeometry args={[0.08, 0.16, 0.08]} />
-        <meshStandardMaterial
-          color={RUNNING_COLORS.primary}
-          emissive={RUNNING_COLORS.primary}
-          emissiveIntensity={0.2}
-          metalness={0.1}
-          roughness={0.8}
-        />
-      </mesh>
-
-      {/* Shoulders (gray - other) */}
-      <mesh position={[-0.13, 0.15, 0]}>
-        <sphereGeometry args={[0.07, 16, 16]} />
-        <meshStandardMaterial color="#888888" metalness={0.1} roughness={0.8} />
-      </mesh>
-      <mesh position={[0.13, 0.15, 0]}>
-        <sphereGeometry args={[0.07, 16, 16]} />
-        <meshStandardMaterial color="#888888" metalness={0.1} roughness={0.8} />
-      </mesh>
-
-      {/* Muscle Labels */}
       {Object.entries(RUNNING_MUSCLES).map(([key, muscle]) => (
         <Html
           key={key}
@@ -168,6 +129,16 @@ function Body() {
         </Html>
       ))}
     </group>
+  );
+}
+
+function ModelFallback() {
+  return (
+    <Html position={[0, 0, 0]} distanceFactor={1.5}>
+      <div className="text-white text-sm text-center">
+        <p>Loading anatomy model...</p>
+      </div>
+    </Html>
   );
 }
 
@@ -206,13 +177,19 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
 
   return (
     <div className="flex gap-0 h-screen w-full bg-gray-50">
-      {/* 3D Canvas */}
       <div className="w-2/3 bg-gradient-to-br from-slate-900 to-slate-800 relative">
-        <Canvas camera={{ position: [0, 0, 1.2], fov: 50 }} className="w-full h-full">
+        <Canvas
+          camera={{ position: [0, 0, 1.2], fov: 50 }}
+          className="w-full h-full"
+        >
           <ambientLight intensity={0.7} />
           <directionalLight position={[5, 10, 7]} intensity={0.9} />
           <pointLight position={[-5, 5, 5]} intensity={0.5} />
-          <Body />
+
+          <ReactSuspense fallback={<ModelFallback />}>
+            <Model />
+          </ReactSuspense>
+
           <OrbitControls
             autoRotate={false}
             enableZoom={true}
@@ -222,7 +199,6 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
           />
         </Canvas>
 
-        {/* Legend */}
         <div className="absolute top-4 left-4 bg-black/70 text-white text-xs rounded-lg p-3 space-y-1">
           <div className="font-semibold mb-2">Running Emphasis</div>
           <div className="flex items-center gap-2">
@@ -239,13 +215,11 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
           </div>
         </div>
 
-        {/* Controls */}
         <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs rounded-lg p-3">
           <div>Drag to rotate • Scroll to zoom</div>
         </div>
       </div>
 
-      {/* Info Panel */}
       <div className="w-1/3 bg-white border-l border-gray-200 overflow-y-auto p-6 flex flex-col">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           {muscleInfo ? muscleInfo.label : 'Hover a muscle'}
@@ -254,7 +228,9 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
         {muscleInfo && (
           <div className="space-y-4 flex-1">
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Running Emphasis</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                Running Emphasis
+              </h3>
               <p className="text-sm text-gray-600">
                 {muscleInfo.emphasis === 'primary'
                   ? 'Primary mover (90% stress)'
@@ -265,7 +241,9 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Research Papers</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                Research Papers
+              </h3>
               <p className="text-xs text-gray-500 italic">
                 Papers matching this region load when you select it
               </p>
