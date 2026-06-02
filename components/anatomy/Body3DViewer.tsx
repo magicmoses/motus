@@ -1,20 +1,18 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense as ReactSuspense } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Html } from '@react-three/drei'
 import * as THREE from 'three'
 
-// Running muscle color scheme
 const RUNNING_COLORS = {
-  primary: '#ff4444',    // Bright red: quads, calves, core
-  secondary: '#ff8844',  // Orange: glutes, hamstrings, hip_flexors
-  stabilizer: '#ffbb44', // Yellow: lower_back, ankles, achilles
+  primary: '#ff4444',
+  secondary: '#ff8844',
+  stabilizer: '#ffbb44',
 }
 
-// Muscle groups for running (for labeling)
 const RUNNING_MUSCLES = {
   quads: { label: 'Quads', emphasis: 'primary', y: -0.2, x: 0 },
   calves: { label: 'Calves', emphasis: 'primary', y: -0.5, x: 0 },
@@ -26,37 +24,30 @@ const RUNNING_MUSCLES = {
   achilles: { label: 'Achilles', emphasis: 'stabilizer', y: -0.65, x: 0 },
 }
 
-// Determine if mesh is part of running muscles
 function getMuscleCategory(
   position: THREE.Vector3
 ): { category: 'primary' | 'secondary' | 'stabilizer' | 'other'; name?: string } {
-  // Y-axis: head=high, feet=low
-  // Z-axis: front=negative, back=positive
-
-  // Lower body
   if (position.y < -0.1) {
     if (position.z < -0.05) {
-      return { category: 'primary', name: 'quads' }; // Quads zone
+      return { category: 'primary', name: 'quads' };
     }
     if (position.z > 0.05) {
-      return { category: 'secondary', name: 'hamstrings' }; // Hamstrings zone
+      return { category: 'secondary', name: 'hamstrings' };
     }
     if (Math.abs(position.x) > 0.08) {
-      return { category: 'secondary', name: 'hip_flexors' }; // Sides
+      return { category: 'secondary', name: 'hip_flexors' };
     }
   }
 
-  // Core area
   if (position.y > -0.1 && position.y < 0.15) {
     if (Math.abs(position.z) < 0.08) {
-      return { category: 'primary', name: 'core' }; // Core/abs
+      return { category: 'primary', name: 'core' };
     }
     if (position.z > 0.08) {
-      return { category: 'stabilizer', name: 'lower_back' }; // Lower back zone
+      return { category: 'stabilizer', name: 'lower_back' };
     }
   }
 
-  // Very low (feet/ankles)
   if (position.y < -0.55) {
     return { category: 'stabilizer', name: 'achilles' };
   }
@@ -64,13 +55,12 @@ function getMuscleCategory(
   return { category: 'other' };
 }
 
-function Model({ onMeshHover }: { onMeshHover: (name: string | null) => void }) {
+function Model() {
   const group = useRef<THREE.Group>(null);
-  const { scene } = useGLTF('/models/myology.glb');
+  const gltf = useGLTF('https://drive.google.com/uc?export=download&id=1bev8A_BhVqUmYZjuDeUlI8A-5Por7j7j');
+  const { scene } = gltf;
 
   useEffect(() => {
-    const colorMap = new Map<THREE.Mesh, string>();
-
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         if (!child.geometry.boundingBox) {
@@ -82,7 +72,6 @@ function Model({ onMeshHover }: { onMeshHover: (name: string | null) => void }) 
           child.geometry.boundingBox.getCenter(center);
           const { category } = getMuscleCategory(center);
 
-          // Color logic: running muscles in color, others in gray
           const colorHex =
             category === 'primary'
               ? RUNNING_COLORS.primary
@@ -90,7 +79,7 @@ function Model({ onMeshHover }: { onMeshHover: (name: string | null) => void }) 
                 ? RUNNING_COLORS.secondary
                 : category === 'stabilizer'
                   ? RUNNING_COLORS.stabilizer
-                  : '#aaaaaa'; // Gray for non-running muscles
+                  : '#aaaaaa';
 
           if (child.material) {
             const materials = Array.isArray(child.material)
@@ -110,17 +99,14 @@ function Model({ onMeshHover }: { onMeshHover: (name: string | null) => void }) 
             });
           }
         }
-
       }
     });
-
   }, [scene]);
 
   return (
     <group ref={group}>
       <primitive object={scene} scale={1} position={[0, 0, 0]} />
 
-      {/* Muscle Labels */}
       {Object.entries(RUNNING_MUSCLES).map(([key, muscle]) => (
         <Html
           key={key}
@@ -138,14 +124,23 @@ function Model({ onMeshHover }: { onMeshHover: (name: string | null) => void }) 
                     : 'bg-yellow-500 text-gray-900'
               }
             `}
-            onMouseEnter={() => onMeshHover(key)}
-            onMouseLeave={() => onMeshHover(null)}
           >
             {muscle.label}
           </div>
         </Html>
       ))}
     </group>
+  );
+}
+
+function ModelFallback() {
+  return (
+    <Html position={[0, 0, 0]} distanceFactor={1.5}>
+      <div className="text-white text-sm text-center">
+        <p>3D model loading...</p>
+        <p className="text-xs mt-2">Muscle labels below</p>
+      </div>
+    </Html>
   );
 }
 
@@ -158,13 +153,8 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
   const pathname = usePathname();
   const params = useSearchParams();
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   const activeRegion = params.get('region');
-
-  useEffect(() => {
-    setSelectedRegion(activeRegion);
-  }, [activeRegion]);
 
   const handleRegionSelect = (region: string | null) => {
     const next = new URLSearchParams(params.toString());
@@ -191,7 +181,6 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
 
   return (
     <div className="flex gap-0 h-screen w-full bg-gray-50">
-      {/* 3D Canvas - 2/3 width */}
       <div className="w-2/3 bg-gradient-to-br from-slate-900 to-slate-800 relative">
         <Canvas
           camera={{ position: [0, 0, 1.2], fov: 50 }}
@@ -201,9 +190,10 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
           <directionalLight position={[5, 10, 7]} intensity={0.9} />
           <pointLight position={[-5, 5, 5]} intensity={0.5} />
 
-          <Model onMeshHover={handleMuscleHover} />
+          <ReactSuspense fallback={<ModelFallback />}>
+            <Model />
+          </ReactSuspense>
 
-          {/* Simple orbit controls - no auto-rotate, smooth interaction */}
           <OrbitControls
             autoRotate={false}
             enableZoom={true}
@@ -213,7 +203,6 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
           />
         </Canvas>
 
-        {/* Legend - top left */}
         <div className="absolute top-4 left-4 bg-black/70 text-white text-xs rounded-lg p-3 space-y-1">
           <div className="font-semibold mb-2">Running Emphasis</div>
           <div className="flex items-center gap-2">
@@ -228,19 +217,13 @@ export function Body3DViewer({ sport = 'running' }: Body3DViewerProps) {
             <div className="w-3 h-3 bg-yellow-500 rounded" />
             <span>Stabilizer (50%)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-gray-500 rounded" />
-            <span>Other</span>
-          </div>
         </div>
 
-        {/* Controls hint - bottom left */}
         <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs rounded-lg p-3">
           <div>Drag to rotate • Scroll to zoom</div>
         </div>
       </div>
 
-      {/* Info Panel - 1/3 width */}
       <div className="w-1/3 bg-white border-l border-gray-200 overflow-y-auto p-6 flex flex-col">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           {muscleInfo ? muscleInfo.label : 'Hover a muscle'}
