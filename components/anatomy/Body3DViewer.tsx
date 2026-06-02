@@ -57,7 +57,7 @@ function getMuscleCategory(
 
 function Model() {
   const group = useRef<THREE.Group>(null);
-  const gltf = useGLTF('https://drive.google.com/uc?export=download&id=1bev8A_BhVqUmYZjuDeUlI8A-5Por7j7j');
+  const gltf = useGLTF('/models/myology.glb');
   const { scene } = gltf;
 
   useEffect(() => {
