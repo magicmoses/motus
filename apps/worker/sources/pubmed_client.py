@@ -51,11 +51,6 @@ ENDURANCE_QUERIES = [
     '"concurrent training"[TIAB]',
     '"hybrid athlete"[TIAB]',
     '"functional threshold"[TIAB]',
-    # INLINE SKATING (4)
-    '"inline skating"[TIAB]',
-    '"speed skating"[TIAB] AND "endurance"[TIAB]',
-    '"long track speed skating"[TIAB]',
-    '"short track speed skating"[TIAB] AND "physiology"[TIAB]',
     # PHYSIOLOGY cross-sport (8) — tagger will assign multiple sports
     '"maximal oxygen uptake"[TIAB]',
     '"VO2max"[TIAB] AND "endurance"[TIAB]',

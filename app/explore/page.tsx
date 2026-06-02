@@ -4,9 +4,9 @@ import { toFeedPaper } from '@/lib/feed'
 import { FeedList } from '@/components/feed/FeedList'
 import { Pagination } from '@/components/feed/Pagination'
 import { EvidenceLegend } from '@/components/feed/EvidenceLegend'
-import { BodyMap } from '@/components/anatomy/BodyMap'
 import { RegionPaperPreview } from '@/components/anatomy/RegionPaperPreview'
 import { SortToggle } from '@/components/anatomy/SortToggle'
+import { Body3DViewerWrapper } from '@/components/anatomy/Body3DViewerWrapper'
 
 type SortOption = 'newest' | 'best'
 
@@ -97,23 +97,10 @@ export default async function ExplorePage({ searchParams }: Props) {
       </div>
       <p className="text-sm text-gray-500 mb-6">Navigate anatomy to find relevant research</p>
 
-      <div className="flex gap-6 mb-8">
-        <Suspense>
-          <BodyMap />
+      <div className={`mb-8 ${region ? 'flex gap-0 h-96' : 'w-full h-screen -mx-4 -my-8'}`}>
+        <Suspense fallback={<div className="flex-1 bg-slate-900 animate-pulse" />}>
+          <Body3DViewerWrapper />
         </Suspense>
-        {region ? (
-          <div className="flex-1 min-w-0 pt-1">
-            <Suspense fallback={<p className="text-xs text-gray-400">Loading papers…</p>}>
-              <RegionPaperPreview region={region} sort={sort} />
-            </Suspense>
-          </div>
-        ) : (
-          <div className="flex-1 min-w-0 pt-1 flex items-center">
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Click a highlighted region on the body map to preview relevant papers.
-            </p>
-          </div>
-        )}
       </div>
 
       <Suspense fallback={<p className="text-gray-400 text-sm">Loading&hellip;</p>}>

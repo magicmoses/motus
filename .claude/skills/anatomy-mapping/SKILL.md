@@ -26,7 +26,6 @@ Bilateral muscles: prefix left_ / right_ for hover, use base name for DB queries
 | rowing        | lats, core, quads, lower_back, grip_forearms         |
 | hyrox         | shoulders, lower_back, knees, grip_forearms          |
 | skiing        | quads, core, hip_flexors, ankles                     |
-| inline_skating| quads, glutes, hip_abductors, core                  |
 
 ## High stress / injury zones (alternate view)
 

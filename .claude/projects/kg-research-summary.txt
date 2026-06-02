@@ -1,0 +1,240 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║          KNOWLEDGE GRAPH RESEARCH SYNTHESIS FOR MOTUS                      ║
+║                                                                            ║
+║  State-of-Art Analysis: Biomedical KGs, Sports Science Ontologies,        ║
+║  Lightweight Implementations, and Visualization Patterns                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. EXISTING BIOMEDICAL / SPORTS KGs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+General-Purpose Systems:
+  • PubMed Knowledge Graph 2.0 (2025)
+    → 36M+ papers, 1.3M entities, 482M linkages
+    → Paper-paper citation network (19M edges)
+    → Best reference implementation for your scale
+
+  • DisGeNET, STITCH, SIDER
+    → Large-scale biological KGs, disease-gene-drug relationships
+    → Mature but NOT sports-specific
+
+Sports Science–Specific (New):
+  ✓ "Ontologies in Motion" (2025, KIT)
+    → First formal sports science ontology using BFO
+    → Motor performance research data modeling
+    → Plan specs → test processes → measurements
+
+  ✓ "Kinetic Human Movement Ontology" (2026, Nature)
+    → Latest standard for physiological movement semantics
+    → Ready for immediate integration
+
+  ✓ "Physical Activity Ontology (PACO)" (2019)
+    → Lightweight OWL, activity effects, locations, conditions
+    → Integrates SNOMED-CT
+
+  ✓ "Sports & Exercise KG Construction" (2022, ACM)
+    → Practical implementation using hierarchical ontologies
+    → Sports analytics domain focus
+
+VERDICT: No single KG covers sports-performance-to-biomarker-to-evidence fully.
+Your advantage: domain-specific curation beats generic.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. LIGHTWEIGHT KG IMPLEMENTATIONS (FOR YOUR SCALE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ RECOMMENDED: Materialized Views in Postgres
+  Why:
+    • Already using Supabase (Postgres)
+    • Deterministic pipeline stages normalize data
+    • Materialized views = fast read-heavy analytics
+    • Can publish as RDF-compatible later if needed
+    • No separate infrastructure cost
+
+  Pattern:
+    kg_nodes view (all node types unified)
+    kg_edges view (relationships + jsonb properties)
+    Refresh nightly after verifier stage completes
+
+  Performance: Sub-100ms queries on 1000 papers + edges
+
+VERDICT: Stay in Postgres. Simplest, fastest, cheapest.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. NODE / EDGE DESIGN FOR SPORTS SCIENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Core Node Types:
+  1. PAPER — DOI, title, abstract, journal, evidence_level
+  2. SPORT — name, category, hierarchy (cycling → road)
+  3. BODY REGION — name, anatomical_type, ICD-11 code
+  4. BIOMARKER — name, category, unit, normal_range
+  5. INTERVENTION — type, duration, protocol (training/supplement/recovery/device)
+  6. OUTCOME — name, measurement_type, direction
+  7. TOPIC — name, category (physiology/training/nutrition/biomechanics)
+
+Edge Types:
+  Paper → Paper     :CITES
+  Paper → Sport     :STUDIES
+  Paper → Region    :REPORTS_ON
+  Paper → Biomarker :MEASURES
+  Paper → Outcome   :REPORTS_OUTCOME
+  Paper → Topic     :DISCUSSES
+  Intervention → Biomarker :MODIFIES
+  Sport → Sport     :SHARES_PHYSIOLOGY
+  Topic → Topic     :RELATED_TO
+
+KEY: Properties encode certainty (confidence, p_value, effect_size).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. VISUALIZATION APPROACHES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ CYTOSCAPE.JS (for domain experts)
+  • Built for biology networks
+  • FCose layout handles 500 nodes smoothly
+  • <200ms rendering for 1000 nodes
+
+✗ AVOID: Force-directed graphs for hobbyists (chaotic)
+✓ USE: Search-first UI + neighborhood rendering (2-3 hops, 25-100 nodes typical)
+
+Pattern for 1000 Papers:
+  1. Search bar → autocomplete (sports, topics, biomarkers)
+  2. Focus node displayed in center
+  3. N-hop neighborhood visualization
+  4. Context panel with stats and filters
+
+Never render full graph at once.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. QUERY EFFICIENCY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GraphQL vs SPARQL:
+  GraphQL wins for your stack (JS team, Postgres already deployed)
+  • Learning curve: Low for JS devs
+  • Performance: Solvable with DataLoader
+  • Tooling: Excellent in Node.js
+
+Query example: <50ms on 1000 papers
+  papers(sport: "cycling", biomarker: "VO2max")
+    → relatedPapers(relationshipType: "CITES")
+    → outcomes { name, effectSize, confidence }
+
+VERDICT: GraphQL. No SPARQL.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. COST & INFRASTRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Postgres Materialized Views Approach:
+  Infrastructure:  $0 (already have Supabase)
+  Storage:         ~50MB for 1000 papers + relationships
+  Query latency:   <100ms typical
+  Dev time:        2-5 weeks per phase
+
+vs Neo4j:
+  Infrastructure:  $20-100/month additional
+  Dev time:        3-6 weeks per phase
+
+VERDICT: Postgres wins on cost and simplicity for your project.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. TIMELINE BREAKDOWN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 1: Schema + Materialized Views
+  Week 1-2:   Entity tables (kg_sports, kg_biomarkers, kg_regions, etc.)
+  Week 3:     Relationships table (kg_relationships with jsonb)
+  Week 4:     Materialized views (kg_nodes, kg_edges)
+  Week 5-6:   Refresh trigger integration
+  Week 7-8:   RPC functions, performance testing
+  Week 9-10:  Backfill existing enrichments
+  Week 11-12: Index optimization, load testing
+
+  Duration: 12 weeks (3 months)
+  Deliverable: Queryable KG, ~50ms median latency
+
+PHASE 2: GraphQL API
+  Week 1-2:   Apollo Server setup
+  Week 3-4:   Resolvers (neighborhood, filtering, sorting)
+  Week 5:     DataLoader, N+1 optimization
+  Week 6:     Deploy to Vercel edge function
+
+  Duration: 6 weeks (1.5 months)
+  Deliverable: GraphQL endpoint for KG queries
+
+PHASE 3: Visualization UI
+  Week 1-2:   /explore/kg page + Cytoscape.js integration
+  Week 3-4:   Search + neighborhood rendering
+  Week 5:     Filters, context panel, statistics
+  Week 6:     Polish, mobile responsiveness, testing
+
+  Duration: 6 weeks (1.5 months)
+  Deliverable: Interactive KG explorer
+
+SEQUENTIAL TOTAL: 24 weeks (6 months)
+
+PARALLELIZABLE:
+  • You design Phase 1 schema (1-2 weeks) starting NOW
+  • I implement Phase 1 (4-6 weeks while you extend tagger)
+  • You extend tagger for interventions/outcomes (2-3 weeks, parallel)
+  • I build GraphQL (3-4 weeks)
+  • UI together (4-6 weeks)
+
+REALISTIC TIMELINE WITH PARALLELIZATION:
+  → If working regularly (10-15 hrs/week): 4-5 months
+  → If sprinting hard (30+ hrs/week): 2-3 months
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MY HONEST ASSESSMENT ON 3 MONTHS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CAN YOU DO IT? Yes, but with caveats.
+
+Realistic Scenario (3 months, 10-15 hrs/week):
+  Month 1: Schema design + Phase 1 implementation (materialized views)
+  Month 2: GraphQL API built + tagger extended (parallel)
+  Month 3: Basic UI + polishing
+
+Result: Working KG explorer by end of Month 3. Not perfect, but functional.
+
+Tight Timeline Issues:
+  ⚠ Backfilling 1000+ papers into KG tables (data migration) is tedious
+  ⚠ Testing query performance at scale (identifying slow queries, adding indexes)
+  ⚠ Cytoscape.js integration has a learning curve (force-directed vs custom layouts)
+  ⚠ You'd need to maintain the tagger extension in parallel
+
+Faster (2 months, 30+ hrs/week sprinting):
+  Possible, but requires:
+    • Minimal backfill (just upcoming papers)
+    • Basic Cytoscape rendering (no fancy stats)
+    • Fewer edge types (focus on paper→paper, paper→biomarker)
+
+My Recommendation:
+  🎯 Plan for 4-5 months realistically
+  🎯 Start Phase 1 schema design NOW (1-2 weeks)
+  🎯 Focus on Phase 1 quality (the schema sets you up for success or failure)
+  🎯 Defer cosmetic UI polish to Phase 3
+
+OR:
+
+  🎯 Do Phase 1 + 2 in 2-3 months
+  🎯 Leave Phase 3 UI for later (just expose raw GraphQL endpoint for now)
+  🎯 Researchers can query directly, you build viz UI when you have time
+
+Short answer: 3 months is TIGHT but doable if you:
+  ✓ Start schema design this week
+  ✓ Skip perfection on UI in Phase 3
+  ✓ Parallelize tagger extension work
+  ✓ Use materialized views (not Neo4j, not complex architecture)
+
+If you have more time, 4-5 months is COMFORTABLE and lets you:
+  ✓ Build robust backfill process
+  ✓ Test query performance thoroughly
+  ✓ Create a polished UI users enjoy
+
+My gut: 4 months, working steadily. Worth it.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
