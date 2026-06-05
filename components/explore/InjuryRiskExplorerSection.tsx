@@ -18,7 +18,16 @@ interface Injury {
   relatedPaperCount: number
 }
 
-// Temp data — später aus Supabase
+// Injury to body_region mapping for searching papers
+const INJURY_TO_REGION: Record<string, string> = {
+  "Runner's Knee": 'knee',
+  'Plantar Fasciitis': 'foot',
+  'Shin Splints': 'shin',
+  'IT Band Syndrome': 'knee',
+  'Achilles Tendinopathy': 'achilles',
+}
+
+// Temp data — senare aus Supabase
 const RUNNING_INJURIES: Injury[] = [
   {
     id: '1',
@@ -172,7 +181,7 @@ export function InjuryRiskExplorerSection() {
 
                 <div className="pt-3 border-t border-gray-200">
                   <Link
-                    href={`/new?search=${encodeURIComponent(injury.name)}`}
+                    href={`/new?sport=running&region=${INJURY_TO_REGION[injury.name]}`}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
                     View {injury.relatedPaperCount} research papers →

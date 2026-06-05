@@ -35,6 +35,7 @@ async function PaperFeed({
   if (topic)     countQ = countQ.contains('topics', [topic])
   if (region)    countQ = countQ.contains('body_regions', [region])
   if (dimension) countQ = countQ.contains('research_dimensions', [dimension])
+  if (search)    countQ = countQ.ilike('title', `%${search}%`)
 
   let dataQ = supabase.from('enriched_papers').select('*')
   if (sport)     dataQ = dataQ.contains('sports', [sport])
