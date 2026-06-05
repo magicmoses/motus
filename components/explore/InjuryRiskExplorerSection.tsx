@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 interface PreventionStrategy {
   name: string
@@ -170,9 +171,12 @@ export function InjuryRiskExplorerSection() {
                 </div>
 
                 <div className="pt-3 border-t border-gray-200">
-                  <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    View {injury.relatedPaperCount} research papers
-                  </button>
+                  <Link
+                    href={`/new?search=${encodeURIComponent(injury.name)}`}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    View {injury.relatedPaperCount} research papers →
+                  </Link>
                 </div>
               </div>
             )}

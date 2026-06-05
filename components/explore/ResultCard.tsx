@@ -25,7 +25,8 @@ const EVIDENCE_COLORS: Record<string, string> = {
 }
 
 export function ResultCard({ paper, onSpinAgain }: ResultCardProps) {
-  const badgeClass = EVIDENCE_COLORS[paper.evidence_level] || 'bg-gray-100 text-gray-800'
+  const evidenceLevel = typeof paper.evidence_level === 'string' ? paper.evidence_level : 'cohort'
+  const badgeClass = EVIDENCE_COLORS[evidenceLevel] || 'bg-gray-100 text-gray-800'
 
   return (
     <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -47,7 +48,7 @@ export function ResultCard({ paper, onSpinAgain }: ResultCardProps) {
         {/* Metadata */}
         <div className="mb-6 flex flex-wrap gap-2">
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${badgeClass}`}>
-            {paper.evidence_level.replace('-', ' ').toUpperCase()}
+            {evidenceLevel.replace('-', ' ').toUpperCase()}
           </span>
           {paper.sport && paper.sport[0] && (
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
