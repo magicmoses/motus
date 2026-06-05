@@ -129,7 +129,8 @@ class TestNormalizePaper:
         paper = _make_paper()
         result = _normalize_paper(paper)
         expected_keys = {'doi', 'title', 'abstract', 'authors', 'journal',
-                         'source_url', 'source_id', 'source_name', 'published_at'}
+                         'source_url', 'source_id', 'source_name', 'published_at',
+                         'citation_count'}
         assert set(result.keys()) == expected_keys
 
     def test_date_truncated_to_10_chars(self):
