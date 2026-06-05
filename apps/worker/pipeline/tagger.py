@@ -24,8 +24,8 @@ MODEL = 'claude-haiku-4-5-20251001'
 MAX_TOKENS = 768
 TAGGER_PROMPT = Path(__file__).parent.parent / 'prompts' / 'tagger_system.txt'
 
-_CONF_AUTO_COMMIT = 0.85
-_CONF_NEEDS_REVIEW = 0.60
+_CONF_AUTO_COMMIT = 0.75
+_CONF_NEEDS_REVIEW = 0.50
 
 _ALLOWED_SPORTS = frozenset({'running', 'cycling', 'rowing', 'skiing', 'hyrox', 'triathlon'})
 _ALLOWED_RESEARCH_DIMENSIONS = frozenset({
@@ -80,8 +80,8 @@ def _determine_status(confidence: dict) -> str:
     """
     Derive enrichment_status from confidence scores.
 
-    All three key signals below 0.60 → flagged (excluded from feed).
-    All three at or above 0.85 → auto_committed.
+    All three key signals below 0.50 → flagged (excluded from feed).
+    At least two at or above 0.75 → auto_committed.
     Otherwise → needs_review.
     """
     sports_c = confidence.get('sports', 0.0) or 0.0
@@ -90,7 +90,9 @@ def _determine_status(confidence: dict) -> str:
 
     if sports_c < _CONF_NEEDS_REVIEW and topics_c < _CONF_NEEDS_REVIEW and evidence_c < _CONF_NEEDS_REVIEW:
         return 'flagged'
-    if sports_c >= _CONF_AUTO_COMMIT and topics_c >= _CONF_AUTO_COMMIT and evidence_c >= _CONF_AUTO_COMMIT:
+
+    high_confidence_count = sum(1 for c in [sports_c, topics_c, evidence_c] if c >= _CONF_AUTO_COMMIT)
+    if high_confidence_count >= 2:
         return 'auto_committed'
     return 'needs_review'
 
@@ -110,21 +112,25 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
     system_prompt = TAGGER_PROMPT.read_text(encoding='utf-8')
     user_msg = f'Title: {title}\n\nAbstract: {abstract}'
 
-    msg = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        system=system_prompt,
-        messages=[{'role': 'user', 'content': user_msg}],
-    )
-    inp = msg.usage.input_tokens
-    out = msg.usage.output_tokens
-
-    raw_text = _extract_json(msg.content[0].text if msg.content else '')
     try:
-        data = json.loads(raw_text)
-    except json.JSONDecodeError:
-        logger.warning(f'Tagger: invalid JSON response for "{title[:40]}" — raw: {raw_text[:120]!r}')
-        return None, inp, out
+        msg = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=system_prompt,
+            messages=[{'role': 'user', 'content': user_msg}],
+        )
+        inp = msg.usage.input_tokens
+        out = msg.usage.output_tokens
+
+        raw_text = _extract_json(msg.content[0].text if msg.content else '')
+        try:
+            data = json.loads(raw_text)
+        except json.JSONDecodeError:
+            logger.warning(f'Tagger: invalid JSON response for "{title[:40]}" — raw: {raw_text[:120]!r}')
+            return None, inp, out
+    except Exception as e:
+        logger.warning(f'Tagger API error for "{title[:40]}": {e}')
+        return None, 0, 0
 
     confidence: dict = data.get('confidence') or {}
 
