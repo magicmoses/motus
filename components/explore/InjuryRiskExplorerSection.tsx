@@ -22,7 +22,7 @@ interface Injury {
 const INJURY_TO_REGION: Record<string, string> = {
   "Runner's Knee": 'knee',
   'Plantar Fasciitis': 'foot',
-  'Shin Splints': 'shin',
+  'Shin Splints': 'calves',
   'IT Band Syndrome': 'knee',
   'Achilles Tendinopathy': 'achilles',
 }
