@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { WheelComponent } from './wheel/WheelComponent'
 import { ResultCard } from './ResultCard'
 import { createClient } from '@/lib/supabase/client'
@@ -17,6 +17,7 @@ interface Paper {
 }
 
 export function ResearchRouletteSection() {
+  const wheelRef = useRef<{ triggerSpin: () => void } | null>(null)
   const [papers, setPapers] = useState<Paper[]>([])
   const [isSpinning, setIsSpinning] = useState(false)
   const [resultPaper, setResultPaper] = useState<Paper | null>(null)
@@ -83,14 +84,14 @@ export function ResearchRouletteSection() {
       {/* Wheel Section */}
       <div className="flex flex-col items-center justify-center py-8">
         <div className="w-80 h-80">
-          <WheelComponent papers={papers} onSpin={handleSpin} isSpinning={isSpinning} />
+          <WheelComponent ref={wheelRef} papers={papers} onSpin={handleSpin} isSpinning={isSpinning} />
         </div>
       </div>
 
       {/* Spin Button */}
       <div className="flex justify-center">
         <button
-          onClick={() => handleSpin(papers[Math.floor(Math.random() * papers.length)])}
+          onClick={() => wheelRef.current?.triggerSpin()}
           disabled={isSpinning || papers.length === 0}
           className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
