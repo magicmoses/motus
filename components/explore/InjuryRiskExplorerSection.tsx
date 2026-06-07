@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 interface PreventionStrategy {
   name: string
@@ -18,13 +19,13 @@ interface Injury {
   relatedPaperCount: number
 }
 
-// Injury to search keywords for finding papers
+// Injury to search keywords (includes synonyms for better coverage)
 const INJURY_TO_SEARCH: Record<string, string> = {
-  "Runner's Knee": 'patellofemoral pain',
-  'Plantar Fasciitis': 'plantar fasciitis',
-  'Shin Splints': 'tibial stress syndrome',
-  'IT Band Syndrome': 'iliotibial band',
-  'Achilles Tendinopathy': 'achilles tendinopathy',
+  "Runner's Knee": 'patellofemoral pain runner',
+  'Plantar Fasciitis': 'plantar fasciitis foot',
+  'Shin Splints': 'medial tibial stress syndrome',
+  'IT Band Syndrome': 'iliotibial band runner',
+  'Achilles Tendinopathy': 'achilles tendon running',
 }
 
 // Temp data — senare aus Supabase
@@ -94,6 +95,7 @@ const RUNNING_INJURIES: Injury[] = [
 export function InjuryRiskExplorerSection() {
   const [injuries, setInjuries] = useState<Injury[]>(RUNNING_INJURIES)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [paperCounts, setPaperCounts] = useState<Record<string, number>>({})
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -121,6 +123,27 @@ export function InjuryRiskExplorerSection() {
     }
   }
 
+  const fetchPaperCount = async (injuryName: string) => {
+    if (paperCounts[injuryName] !== undefined) return
+
+    const searchTerm = `%${INJURY_TO_SEARCH[injuryName]}%`
+    const supabase = createClient()
+
+    const { count } = await supabase
+      .from('enriched_papers')
+      .select('id', { count: 'exact', head: true })
+      .or(`title.ilike.${searchTerm},abstract.ilike.${searchTerm},summary.ilike.${searchTerm}`)
+
+    setPaperCounts(prev => ({ ...prev, [injuryName]: count || 0 }))
+  }
+
+  const handleExpandCard = (injuryId: string, injuryName: string) => {
+    setExpandedId(expandedId === injuryId ? null : injuryId)
+    if (expandedId !== injuryId) {
+      fetchPaperCount(injuryName)
+    }
+  }
+
   return (
     <div className="space-y-8">
       {/* Introduction */}
@@ -137,7 +160,7 @@ export function InjuryRiskExplorerSection() {
           <div
             key={injury.id}
             className={`border rounded-lg p-4 cursor-pointer transition-all ${getRiskColor(injury.riskLevel)}`}
-            onClick={() => setExpandedId(expandedId === injury.id ? null : injury.id)}
+            onClick={() => handleExpandCard(injury.id, injury.name)}
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
@@ -152,7 +175,7 @@ export function InjuryRiskExplorerSection() {
                 className="flex-shrink-0 text-gray-400 hover:text-gray-600 text-xl"
                 onClick={(e) => {
                   e.stopPropagation()
-                  setExpandedId(expandedId === injury.id ? null : injury.id)
+                  handleExpandCard(injury.id, injury.name)
                 }}
               >
                 {expandedId === injury.id ? '−' : '+'}
@@ -184,7 +207,7 @@ export function InjuryRiskExplorerSection() {
                     href={`/new?search=${encodeURIComponent(INJURY_TO_SEARCH[injury.name])}`}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    View research papers →
+                    View {paperCounts[injury.name] ?? '...'} research papers →
                   </Link>
                 </div>
               </div>

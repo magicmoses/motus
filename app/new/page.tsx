@@ -35,7 +35,10 @@ async function PaperFeed({
   if (topic)     countQ = countQ.contains('topics', [topic])
   if (region)    countQ = countQ.contains('body_regions', [region])
   if (dimension) countQ = countQ.contains('research_dimensions', [dimension])
-  if (search)    countQ = countQ.ilike('title', `%${search}%`)
+  if (search) {
+    const searchTerm = `%${search}%`
+    countQ = countQ.or(`title.ilike.${searchTerm},abstract.ilike.${searchTerm},summary.ilike.${searchTerm}`)
+  }
 
   let dataQ = supabase.from('enriched_papers').select('*')
   if (sport)     dataQ = dataQ.contains('sports', [sport])
@@ -43,7 +46,10 @@ async function PaperFeed({
   if (topic)     dataQ = dataQ.contains('topics', [topic])
   if (region)    dataQ = dataQ.contains('body_regions', [region])
   if (dimension) dataQ = dataQ.contains('research_dimensions', [dimension])
-  if (search)    dataQ = dataQ.ilike('title', `%${search}%`)
+  if (search) {
+    const searchTerm = `%${search}%`
+    dataQ = dataQ.or(`title.ilike.${searchTerm},abstract.ilike.${searchTerm},summary.ilike.${searchTerm}`)
+  }
 
   const [countRes, { data, error }] = await Promise.all([
     countQ,
