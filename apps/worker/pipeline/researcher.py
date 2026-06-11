@@ -14,6 +14,14 @@ from utils.logger import get_logger
 load_dotenv()
 logger = get_logger(__name__)
 
+# Discovery order matters: shared seen-sets dedupe later sources against earlier ones.
+SOURCE_LABELS = {
+    'pubmed': 'PubMed',
+    'semantic_scholar': 'Semantic Scholar',
+    'arxiv': 'arXiv',
+    'rss': 'RSS',
+}
+
 
 def title_hash(title: str) -> str:
     return hashlib.md5(title.lower().strip().encode()).hexdigest()
@@ -54,71 +62,34 @@ def _queue_paper(paper: dict, source: str, seen_dois: set[str], seen_hashes: set
     return True
 
 
-def run_pubmed(
-    days_back: int,
-    limit: int,
+def _fetch(source: str, days_back: int) -> list[dict]:
+    if source == 'pubmed':
+        return PubMedClient().search_all_queries(days_back=days_back)
+    if source == 'semantic_scholar':
+        return SemanticScholarClient().search_all_queries()
+    if source == 'arxiv':
+        return ArXivClient().search_all_queries()
+    return RSSClient().fetch_all()
+
+
+def run_source(
+    source: str,
     seen_dois: set[str],
     seen_hashes: set[str],
+    days_back: int = 1,
+    limit: int = 0,
 ) -> tuple[int, int, int]:
-    """Discover papers from PubMed. Returns (found, queued, skipped)."""
-    client = PubMedClient()
-    papers = client.search_all_queries(days_back=days_back)
-    if limit:
+    """Discover papers from one source and queue non-duplicates.
+    Returns (found, queued, skipped)."""
+    papers = _fetch(source, days_back)
+    if limit and source == 'pubmed':  # --limit historically only bounds PubMed
         papers = papers[:limit]
     queued = 0
     for paper in papers:
-        if _queue_paper(paper, 'pubmed', seen_dois, seen_hashes):
+        if _queue_paper(paper, source, seen_dois, seen_hashes):
             queued += 1
     skipped = len(papers) - queued
-    logger.info(f'PubMed: found={len(papers)} queued={queued} skipped={skipped}')
-    return len(papers), queued, skipped
-
-
-def run_semantic_scholar(
-    seen_dois: set[str],
-    seen_hashes: set[str],
-) -> tuple[int, int, int]:
-    """Discover papers from Semantic Scholar. Returns (found, queued, skipped)."""
-    client = SemanticScholarClient()
-    papers = client.search_all_queries()
-    queued = 0
-    for paper in papers:
-        if _queue_paper(paper, 'semantic_scholar', seen_dois, seen_hashes):
-            queued += 1
-    skipped = len(papers) - queued
-    logger.info(f'Semantic Scholar: found={len(papers)} queued={queued} skipped={skipped}')
-    return len(papers), queued, skipped
-
-
-def run_arxiv(
-    seen_dois: set[str],
-    seen_hashes: set[str],
-) -> tuple[int, int, int]:
-    """Discover papers from arXiv. Returns (found, queued, skipped)."""
-    client = ArXivClient()
-    papers = client.search_all_queries()
-    queued = 0
-    for paper in papers:
-        if _queue_paper(paper, 'arxiv', seen_dois, seen_hashes):
-            queued += 1
-    skipped = len(papers) - queued
-    logger.info(f'arXiv: found={len(papers)} queued={queued} skipped={skipped}')
-    return len(papers), queued, skipped
-
-
-def run_rss(
-    seen_dois: set[str],
-    seen_hashes: set[str],
-) -> tuple[int, int, int]:
-    """Discover papers from RSS feeds. Returns (found, queued, skipped)."""
-    client = RSSClient()
-    papers = client.fetch_all()
-    queued = 0
-    for paper in papers:
-        if _queue_paper(paper, 'rss', seen_dois, seen_hashes):
-            queued += 1
-    skipped = len(papers) - queued
-    logger.info(f'RSS: found={len(papers)} queued={queued} skipped={skipped}')
+    logger.info(f'{SOURCE_LABELS[source]}: found={len(papers)} queued={queued} skipped={skipped}')
     return len(papers), queued, skipped
 
 
@@ -127,7 +98,7 @@ def main() -> None:
     parser.add_argument(
         '--source',
         default='all',
-        choices=['all', 'pubmed', 'semantic_scholar', 'arxiv', 'rss'],
+        choices=['all', *SOURCE_LABELS],
     )
     parser.add_argument('--days', type=int, default=1)
     parser.add_argument('--limit', type=int, default=0,
@@ -139,26 +110,16 @@ def main() -> None:
     seen_hashes: set[str] = set()
     totals: dict[str, tuple[int, int, int]] = {}
 
-    if args.source in ('all', 'pubmed'):
-        found, queued, skipped = run_pubmed(args.days, args.limit, seen_dois, seen_hashes)
-        totals['PubMed'] = (found, queued, skipped)
-
-    if args.source in ('all', 'semantic_scholar'):
-        key = os.getenv('SEMANTIC_SCHOLAR_API_KEY', '').strip()
-        if not key:
+    for source, label in SOURCE_LABELS.items():
+        if args.source not in ('all', source):
+            continue
+        if source == 'semantic_scholar' and not os.getenv('SEMANTIC_SCHOLAR_API_KEY', '').strip():
             logger.warning('Semantic Scholar key not set — skipping source')
-            totals['Semantic Scholar'] = (-1, 0, 0)
-        else:
-            found, queued, skipped = run_semantic_scholar(seen_dois, seen_hashes)
-            totals['Semantic Scholar'] = (found, queued, skipped)
-
-    if args.source in ('all', 'arxiv'):
-        found, queued, skipped = run_arxiv(seen_dois, seen_hashes)
-        totals['arXiv'] = (found, queued, skipped)
-
-    if args.source in ('all', 'rss'):
-        found, queued, skipped = run_rss(seen_dois, seen_hashes)
-        totals['RSS'] = (found, queued, skipped)
+            totals[label] = (-1, 0, 0)
+            continue
+        totals[label] = run_source(
+            source, seen_dois, seen_hashes, days_back=args.days, limit=args.limit,
+        )
 
     total_queued = 0
     logger.info('=' * 50)

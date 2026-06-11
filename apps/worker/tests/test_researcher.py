@@ -148,9 +148,9 @@ class TestRunSourceAccounting:
         client.search_all_queries.return_value = papers
         with patch('pipeline.researcher.PubMedClient', return_value=client):
             # pre-seed one DOI as already seen → it must be skipped
-            found, queued, skipped = researcher.run_pubmed(
+            found, queued, skipped = researcher.run_source(
+                'pubmed', seen_dois={papers[0]['doi']}, seen_hashes=set(),
                 days_back=1, limit=0,
-                seen_dois={papers[0]['doi']}, seen_hashes=set(),
             )
         assert (found, queued, skipped) == (3, 2, 1)
         client.search_all_queries.assert_called_once_with(days_back=1)
@@ -162,8 +162,9 @@ class TestRunSourceAccounting:
         client = MagicMock()
         client.search_all_queries.return_value = papers
         with patch('pipeline.researcher.PubMedClient', return_value=client):
-            found, queued, skipped = researcher.run_pubmed(
-                days_back=1, limit=2, seen_dois=set(), seen_hashes=set(),
+            found, queued, skipped = researcher.run_source(
+                'pubmed', seen_dois=set(), seen_hashes=set(),
+                days_back=1, limit=2,
             )
         assert (found, queued, skipped) == (2, 2, 0)
 
@@ -172,7 +173,7 @@ class TestRunSourceAccounting:
         client = MagicMock()
         client.search_all_queries.return_value = papers
         with patch('pipeline.researcher.SemanticScholarClient', return_value=client):
-            found, queued, skipped = researcher.run_semantic_scholar(set(), set())
+            found, queued, skipped = researcher.run_source('semantic_scholar', set(), set())
         assert (found, queued, skipped) == (2, 2, 0)
         sources = {c.kwargs['source'] for c in no_db_dupes.call_args_list}
         assert sources == {'semantic_scholar'}
@@ -182,7 +183,7 @@ class TestRunSourceAccounting:
         client = MagicMock()
         client.search_all_queries.return_value = papers
         with patch('pipeline.researcher.ArXivClient', return_value=client):
-            found, queued, skipped = researcher.run_arxiv(set(), set())
+            found, queued, skipped = researcher.run_source('arxiv', set(), set())
         assert (found, queued, skipped) == (2, 2, 0)
         sources = {c.kwargs['source'] for c in no_db_dupes.call_args_list}
         assert sources == {'arxiv'}
@@ -192,7 +193,7 @@ class TestRunSourceAccounting:
         client = MagicMock()
         client.fetch_all.return_value = papers
         with patch('pipeline.researcher.RSSClient', return_value=client):
-            found, queued, skipped = researcher.run_rss(set(), set())
+            found, queued, skipped = researcher.run_source('rss', set(), set())
         assert (found, queued, skipped) == (2, 2, 0)
         sources = {c.kwargs['source'] for c in no_db_dupes.call_args_list}
         assert sources == {'rss'}
@@ -208,8 +209,8 @@ class TestRunSourceAccounting:
         seen_hashes: set = set()
         with patch('pipeline.researcher.PubMedClient', return_value=pm), \
              patch('pipeline.researcher.SemanticScholarClient', return_value=ss):
-            r1 = researcher.run_pubmed(1, 0, seen_dois, seen_hashes)
-            r2 = researcher.run_semantic_scholar(seen_dois, seen_hashes)
+            r1 = researcher.run_source('pubmed', seen_dois, seen_hashes)
+            r2 = researcher.run_source('semantic_scholar', seen_dois, seen_hashes)
         assert r1 == (1, 1, 0)
         assert r2 == (1, 0, 1)
         assert no_db_dupes.call_count == 1
