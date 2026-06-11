@@ -1,9 +1,9 @@
 import time
 from xml.etree import ElementTree as ET
 
-import httpx
 from dotenv import load_dotenv
 
+from utils.http import get_with_retry
 from utils.logger import get_logger
 
 load_dotenv()
@@ -50,38 +50,23 @@ class ArXivClient:
 
     def search(self, query: str, max_results: int = 25) -> list[dict]:
         params = {'search_query': query, 'max_results': max_results}
-        for attempt in range(self.max_retries):
-            try:
-                resp = httpx.get(BASE_URL, params=params, timeout=30, follow_redirects=True)
-                resp.raise_for_status()
-                time.sleep(self.delay)
-                root = ET.fromstring(resp.content)
-                results = []
-                for entry in root.findall(f'{{{ATOM_NS}}}entry'):
-                    paper = self._parse_entry(entry)
-                    if paper:
-                        results.append(paper)
-                return results
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code == 429:
-                    backoff = self.base_backoff * (2 ** attempt)
-                    logger.warning(f'arXiv rate-limited (429) for query "{query[:40]}" — retry {attempt + 1}/{self.max_retries} in {backoff}s')
-                    time.sleep(backoff)
-                    continue
-                logger.error(f'arXiv HTTP error for query "{query[:40]}": {e}')
-                return []
-            except (httpx.TimeoutException, httpx.ConnectError) as e:
-                backoff = self.base_backoff * (2 ** attempt)
-                if attempt < self.max_retries - 1:
-                    logger.warning(f'arXiv timeout/connection error for query "{query[:40]}" — retry {attempt + 1}/{self.max_retries} in {backoff}s')
-                    time.sleep(backoff)
-                    continue
-                logger.error(f'arXiv timeout/connection error for query "{query[:40]}": {e}')
-                return []
-            except Exception as e:
-                logger.error(f'arXiv search error for query "{query[:40]}": {e}')
-                return []
-        return []
+        try:
+            resp = get_with_retry(
+                BASE_URL, params=params, timeout=30, follow_redirects=True,
+                retries=self.max_retries, backoff=self.base_backoff,
+            )
+            resp.raise_for_status()
+            time.sleep(self.delay)
+            root = ET.fromstring(resp.content)
+            results = []
+            for entry in root.findall(f'{{{ATOM_NS}}}entry'):
+                paper = self._parse_entry(entry)
+                if paper:
+                    results.append(paper)
+            return results
+        except Exception as e:
+            logger.error(f'arXiv search error for query "{query[:40]}": {e}')
+            return []
 
     def _parse_entry(self, entry: ET.Element) -> dict | None:
         try:

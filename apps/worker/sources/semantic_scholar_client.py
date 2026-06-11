@@ -3,9 +3,9 @@ import re
 import time
 from typing import Optional
 
-import httpx
 from dotenv import load_dotenv
 
+from utils.http import get_with_retry
 from utils.logger import get_logger
 
 load_dotenv()
@@ -93,7 +93,7 @@ class SemanticScholarClient:
             'fields': FIELDS,
         }
         try:
-            resp = httpx.get(
+            resp = get_with_retry(
                 BASE_URL + 'paper/search',
                 params=params,
                 headers=self._get_headers(),
@@ -149,7 +149,7 @@ class SemanticScholarClient:
         if not identifier:
             return None
         try:
-            resp = httpx.get(
+            resp = get_with_retry(
                 BASE_URL + f'paper/{identifier}',
                 params={'fields': 'citationCount'},
                 headers=self._get_headers(),

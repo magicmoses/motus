@@ -5,6 +5,7 @@ from xml.etree import ElementTree as ET
 import httpx
 from dotenv import load_dotenv
 
+from utils.http import get_with_retry
 from utils.logger import get_logger
 
 load_dotenv()
@@ -169,7 +170,7 @@ class PubMedClient:
         if self.api_key:
             params['api_key'] = self.api_key
         url = BASE_URL + endpoint
-        response = httpx.get(url, params=params, timeout=30)
+        response = get_with_retry(url, params=params, timeout=30)
         response.raise_for_status()
         time.sleep(self.delay)
         return response

@@ -29,7 +29,7 @@ class TestPubMedSearchWindow:
         client.delay = 0  # no rate-limit sleep in tests
         response = MagicMock()
         response.json.return_value = {'esearchresult': {'idlist': ['1', '2']}}
-        with patch('sources.pubmed_client.httpx.get', return_value=response) as get:
+        with patch('utils.http.httpx.get', return_value=response) as get:
             ids = client.search('"running economy"[TIAB]', days_back=days_back)
         assert ids == ['1', '2']
         return get.call_args.kwargs['params']

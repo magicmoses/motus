@@ -4,6 +4,7 @@ from typing import Optional
 import httpx
 from dotenv import load_dotenv
 
+from utils.http import get_with_retry
 from utils.logger import get_logger
 
 load_dotenv()
@@ -19,7 +20,7 @@ class CrossrefClient:
 
     def lookup_doi(self, doi: str) -> Optional[dict]:
         try:
-            resp = httpx.get(BASE_URL + doi, headers=HEADERS, timeout=30)
+            resp = get_with_retry(BASE_URL + doi, headers=HEADERS, timeout=30)
             time.sleep(self.delay)
             if resp.status_code == 404:
                 return None
