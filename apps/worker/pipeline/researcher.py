@@ -100,7 +100,9 @@ def main() -> None:
         default='all',
         choices=['all', *SOURCE_LABELS],
     )
-    parser.add_argument('--days', type=int, default=1)
+    # 3-day window: overlaps cover a missed/failed daily run; dedup makes the
+    # overlap free (re-discovered papers are skipped, not re-queued).
+    parser.add_argument('--days', type=int, default=3)
     parser.add_argument('--limit', type=int, default=0,
                         help='Max papers per source (0 = unlimited)')
     args = parser.parse_args()

@@ -175,6 +175,9 @@ class PubMedClient:
         return response
 
     def search(self, query: str, days_back: int = 7, max_results: int = 50) -> list[str]:
+        """days_back > 0 restricts results to records added to PubMed within
+        the last N days (reldate on the Entrez date); days_back <= 0 searches
+        all-time. Without reldate every 'daily' run re-searched 2018→now."""
         full_query = f'({query}) AND {DATE_FILTER}' if days_back > 0 else query
         params = {
             'db': 'pubmed',
@@ -182,6 +185,9 @@ class PubMedClient:
             'retmax': max_results,
             'retmode': 'json',
         }
+        if days_back > 0:
+            params['reldate'] = days_back
+            params['datetype'] = 'edat'
         try:
             resp = self._get('esearch.fcgi', params)
             data = resp.json()

@@ -247,6 +247,8 @@ class TestMainRouting:
             researcher.main()
         sources = [c.kwargs['source'] for c in no_db_dupes.call_args_list]
         assert sources == ['pubmed', 'semantic_scholar', 'arxiv', 'rss']
+        # default crawl window is 3 days (overlap covers a missed daily run)
+        pm.search_all_queries.assert_called_once_with(days_back=3)
 
     def test_semantic_scholar_skipped_without_key(self, no_db_dupes, monkeypatch):
         monkeypatch.delenv('SEMANTIC_SCHOLAR_API_KEY', raising=False)
