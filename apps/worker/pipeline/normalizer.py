@@ -69,10 +69,11 @@ def _normalize_paper(raw: dict) -> dict:
     Project only the columns that belong in the papers table.
 
     Strips any queue-internal fields and normalises published_at to a
-    10-character ISO 8601 date string (or None).
+    10-character ISO 8601 date string. Unparseable dates become None so a
+    bad source date can't crash the papers insert.
     """
-    published_raw = raw.get('published_at', '')
-    published_at: Optional[str] = str(published_raw)[:10] if published_raw else None
+    published = _parse_date(raw.get('published_at'))
+    published_at: Optional[str] = published.isoformat() if published else None
 
     return {
         'doi': raw.get('doi'),

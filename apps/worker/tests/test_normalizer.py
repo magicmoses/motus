@@ -133,6 +133,13 @@ class TestNormalizePaper:
         result = _normalize_paper(paper)
         assert result['published_at'] is None
 
+    def test_unparseable_published_at_becomes_none(self):
+        # RFC-822 RSS dates used to be truncated to garbage ("Mon, 09 Ju")
+        # and crash the papers insert — now they degrade to None
+        paper = _make_paper(published_at='Mon, 09 Jun 2026 10:00:00 GMT')
+        result = _normalize_paper(paper)
+        assert result['published_at'] is None
+
     def test_authors_defaults_to_empty_list(self):
         paper = _make_paper(authors=None)
         result = _normalize_paper(paper)
