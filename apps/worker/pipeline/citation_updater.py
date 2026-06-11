@@ -9,16 +9,10 @@ Runs after Writer/Tagger — citation count is not needed for enrichment,
 only for future relevance scoring.
 """
 import argparse
-from pathlib import Path
-from dotenv import load_dotenv
 
-_here = Path(__file__).parent
-for _name in ('.env', '.env.local'):
-    for _dir in (_here, _here.parent, _here.parent.parent, _here.parent.parent.parent):
-        _p = _dir / _name
-        if _p.exists():
-            load_dotenv(_p, override=False)
-            break
+from utils.env import load_env
+
+load_env()
 
 from db import queries
 from sources.semantic_scholar_client import SemanticScholarClient

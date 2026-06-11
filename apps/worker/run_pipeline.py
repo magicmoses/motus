@@ -5,18 +5,9 @@ Designed for Railway cron: python run_pipeline.py
 import os
 import sys
 
-from pathlib import Path
-from dotenv import load_dotenv
+from utils.env import load_env
 
-# Load .env first, then .env.local (allows local overrides without committing secrets).
-# Walks up from apps/worker/ to find files at the repo root too.
-_here = Path(__file__).parent
-for _name in ('.env', '.env.local'):
-    for _dir in (_here, _here.parent, _here.parent.parent):
-        _p = _dir / _name
-        if _p.exists():
-            load_dotenv(_p, override=False)
-            break
+load_env()
 
 from utils.logger import get_logger
 
