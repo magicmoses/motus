@@ -179,6 +179,16 @@ class TestRunSourceAccounting:
             )
         assert (found, queued, skipped) == (2, 2, 0)
 
+    def test_limit_bounds_non_pubmed_sources_too(self, no_db_dupes):
+        papers = [_paper(i, 'ss') for i in range(5)]
+        client = MagicMock()
+        client.search_all_queries.return_value = papers
+        with patch('pipeline.researcher.SemanticScholarClient', return_value=client):
+            found, queued, skipped = researcher.run_source(
+                'semantic_scholar', set(), set(), limit=2,
+            )
+        assert (found, queued, skipped) == (2, 2, 0)
+
     def test_semantic_scholar_counts_and_source_label(self, no_db_dupes):
         papers = [_paper(i, 'ss') for i in range(2)]
         client = MagicMock()
@@ -277,6 +287,33 @@ class TestMainRouting:
         ss.search_all_queries.assert_not_called()
         ax.search_all_queries.assert_not_called()
         rss.fetch_all.assert_not_called()
+
+    def test_all_sources_zero_found_fails_loud(self, no_db_dupes, monkeypatch):
+        monkeypatch.setenv('SEMANTIC_SCHOLAR_API_KEY', 'test-key')
+        pm, ss, ax, rss = self._clients()
+        for client in (pm, ss, ax):
+            client.search_all_queries.return_value = []
+        rss.fetch_all.return_value = []
+        with patch('pipeline.researcher.PubMedClient', return_value=pm), \
+             patch('pipeline.researcher.SemanticScholarClient', return_value=ss), \
+             patch('pipeline.researcher.ArXivClient', return_value=ax), \
+             patch('pipeline.researcher.RSSClient', return_value=rss), \
+             patch('sys.argv', ['researcher']):
+            with pytest.raises(SystemExit) as exc:
+                researcher.main()
+        assert exc.value.code == 1
+
+    def test_single_empty_source_does_not_fail(self, no_db_dupes, monkeypatch):
+        # a single quiet source on a manual run is legitimate
+        monkeypatch.setenv('SEMANTIC_SCHOLAR_API_KEY', 'test-key')
+        pm, ss, ax, rss = self._clients()
+        rss.fetch_all.return_value = []
+        with patch('pipeline.researcher.PubMedClient', return_value=pm), \
+             patch('pipeline.researcher.SemanticScholarClient', return_value=ss), \
+             patch('pipeline.researcher.ArXivClient', return_value=ax), \
+             patch('pipeline.researcher.RSSClient', return_value=rss), \
+             patch('sys.argv', ['researcher', '--source', 'rss']):
+            researcher.main()  # must not raise
 
     def test_days_and_limit_args_forwarded(self, no_db_dupes, monkeypatch):
         monkeypatch.setenv('SEMANTIC_SCHOLAR_API_KEY', 'test-key')

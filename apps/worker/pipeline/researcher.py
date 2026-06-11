@@ -1,6 +1,7 @@
 import argparse
 import hashlib
 import os
+import sys
 
 from dotenv import load_dotenv
 
@@ -82,7 +83,7 @@ def run_source(
     """Discover papers from one source and queue non-duplicates.
     Returns (found, queued, skipped)."""
     papers = _fetch(source, days_back)
-    if limit and source == 'pubmed':  # --limit historically only bounds PubMed
+    if limit:
         papers = papers[:limit]
     queued = 0
     for paper in papers:
@@ -124,6 +125,7 @@ def main() -> None:
         )
 
     total_queued = 0
+    total_found = 0
     logger.info('=' * 50)
     logger.info('RESEARCHER REPORT')
     logger.info('=' * 50)
@@ -134,9 +136,19 @@ def main() -> None:
             logger.info(
                 f'{source:20s}: found {found:4d} | queued {queued:4d} | skipped {skipped:4d}'
             )
+            total_found += found
             total_queued += queued
     logger.info(f'TOTAL queued: {total_queued}')
     logger.info('=' * 50)
+
+    # Source clients swallow per-query errors and return [] — if every source
+    # comes back empty across ~180 queries, discovery itself is broken
+    # (network, auth, API change). Fail the run loudly instead of reporting a
+    # quiet green day. found counts include dedup-skipped papers, so a normal
+    # steady-state run is never zero.
+    if args.source == 'all' and total_found == 0:
+        logger.error('All sources returned zero papers — failing the run')
+        sys.exit(1)
 
 
 if __name__ == '__main__':
