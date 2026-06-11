@@ -121,9 +121,7 @@ def main() -> None:
         for e in failed:
             queries.delete_enrichment(e['id'])
         logger.info('Deleted — re-running writer on those papers now')
-        paper_ids = {e['paper_id'] for e in failed}
-        papers_raw = queries.get_papers_without_enrichment(limit=len(paper_ids) + 10)
-        papers = [p for p in papers_raw if p['id'] in paper_ids]
+        papers = queries.get_papers_by_ids([e['paper_id'] for e in failed])
     else:
         papers = queries.get_papers_without_enrichment(limit=args.limit)
 

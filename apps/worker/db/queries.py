@@ -164,6 +164,14 @@ def delete_enrichment(enrichment_id: str) -> None:
     client.table('enrichments').delete().eq('id', enrichment_id).execute()
 
 
+def get_papers_by_ids(paper_ids: list[str]) -> list[dict]:
+    if not paper_ids:
+        return []
+    client = get_client()
+    result = client.table('papers').select('*').in_('id', paper_ids).execute()
+    return result.data or []
+
+
 def get_papers_without_enrichment(limit: int = 20) -> list[dict]:
     client = get_client()
     # LEFT JOIN equivalent: papers where no enrichment exists

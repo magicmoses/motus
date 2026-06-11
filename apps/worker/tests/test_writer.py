@@ -6,8 +6,9 @@ generate → self-check → retry flow so refactors can be verified identical.
 No network: the Anthropic client is mocked.
 """
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+from pipeline import writer
 from pipeline.writer import (
     _has_bad_phrases,
     _trim_to_sentence_boundary,
@@ -113,3 +114,26 @@ class TestGenerateSummary:
         ]
         summary, _, _ = generate_summary(client, _PAPER)
         assert summary is None
+
+
+class TestMainRetryFailed:
+    def test_retry_failed_refetches_exactly_the_failed_papers(self, monkeypatch):
+        monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
+        failed = [{'id': 'e1', 'paper_id': 'p1'}, {'id': 'e2', 'paper_id': 'p2'}]
+        papers = [
+            {'id': 'p1', 'title': 'T1', 'abstract': 'A1'},
+            {'id': 'p2', 'title': 'T2', 'abstract': 'A2'},
+        ]
+        with patch('pipeline.writer.anthropic.Anthropic', return_value=MagicMock()), \
+             patch('pipeline.writer.log_call'), \
+             patch('pipeline.writer.queries.get_failed_enrichments_for_writer_retry',
+                   return_value=failed), \
+             patch('pipeline.writer.queries.delete_enrichment') as delete, \
+             patch('pipeline.writer.queries.get_papers_by_ids', return_value=papers) as by_ids, \
+             patch('pipeline.writer.generate_summary', return_value=('Summary.', 10, 5)), \
+             patch('pipeline.writer.queries.insert_enrichment') as insert, \
+             patch('sys.argv', ['writer', '--retry-failed']):
+            writer.main()
+        by_ids.assert_called_once_with(['p1', 'p2'])
+        assert delete.call_count == 2
+        assert insert.call_count == 2
