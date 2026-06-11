@@ -97,34 +97,21 @@ def _determine_status(confidence: dict) -> str:
     return 'needs_review'
 
 
-def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | None, int, int]:
-    """
-    Call the tagger LLM and return a tag dict.
-    Returns (tags | None, input_tokens, output_tokens).
-    """
-    paper = enrichment.get('papers') or {}
-    title = paper.get('title', '')
-    abstract = paper.get('abstract', '')
-
-    if not abstract:
-        return None, 0, 0
-
-    system_prompt = TAGGER_PROMPT.read_text(encoding='utf-8')
-    user_msg = f'Title: {title}\n\nAbstract: {abstract}'
-
+def _call_llm(client: anthropic.Anthropic, title: str, abstract: str) -> tuple[dict | None, int, int]:
+    """Run the tagger prompt and parse the JSON response.
+    Returns (parsed dict | None, input_tokens, output_tokens)."""
     try:
         msg = client.messages.create(
             model=MODEL,
             max_tokens=MAX_TOKENS,
-            system=system_prompt,
-            messages=[{'role': 'user', 'content': user_msg}],
+            system=TAGGER_PROMPT.read_text(encoding='utf-8'),
+            messages=[{'role': 'user', 'content': f'Title: {title}\n\nAbstract: {abstract}'}],
         )
         inp = msg.usage.input_tokens
         out = msg.usage.output_tokens
-
         raw_text = _extract_json(msg.content[0].text if msg.content else '')
         try:
-            data = json.loads(raw_text)
+            return json.loads(raw_text), inp, out
         except json.JSONDecodeError:
             logger.warning(f'Tagger: invalid JSON response for "{title[:40]}" — raw: {raw_text[:120]!r}')
             return None, inp, out
@@ -132,10 +119,9 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
         logger.warning(f'Tagger API error for "{title[:40]}": {e}')
         return None, 0, 0
 
-    confidence: dict = data.get('confidence') or {}
 
-    # Apply confidence thresholds — drop fields below needs_review threshold
-    # Log multi-perspective reasoning for debugging — not stored in DB
+def _log_reasoning(data: dict) -> None:
+    """Debug-log the model's multi-perspective reasoning — never stored in DB."""
     perspectives = data.get('_perspectives') or {}
     if perspectives:
         logger.debug(
@@ -148,21 +134,20 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
     if sport_reasoning:
         logger.debug(f'Sport reasoning: {sport_reasoning}')
 
-    sports = _filter_allowed(data.get('sports'), _ALLOWED_SPORTS)
-    if (confidence.get('sports') or 0.0) < _CONF_NEEDS_REVIEW:
-        sports = []
 
-    movement_practices = _filter_allowed(data.get('movement_practices'), _ALLOWED_MOVEMENT_PRACTICES)
+def _confidence_gated(data: dict, field: str, allowed: frozenset, confidence_key: str) -> list:
+    """Keep only allowed enum values; drop the whole list when confidence is
+    below the needs_review threshold."""
+    confidence = data.get('confidence') or {}
+    if (confidence.get(confidence_key) or 0.0) < _CONF_NEEDS_REVIEW:
+        return []
+    return _filter_allowed(data.get(field), allowed)
 
-    body_regions = _filter_allowed(data.get('body_regions'), _ALLOWED_BODY_REGIONS)
-    if (confidence.get('body_regions') or 0.0) < _CONF_NEEDS_REVIEW:
-        body_regions = []
 
-    topics = _filter_allowed(data.get('topics'), _ALLOWED_TOPICS)
-    if (confidence.get('topics') or 0.0) < _CONF_NEEDS_REVIEW:
-        topics = []
-
-    research_dimensions = _filter_allowed(data.get('research_dimensions'), _ALLOWED_RESEARCH_DIMENSIONS)
+def _validate_tags(data: dict) -> dict:
+    """Map a parsed LLM response onto the enrichment tag columns:
+    enum-filter every list, null out low-confidence fields, coerce types."""
+    confidence: dict = data.get('confidence') or {}
 
     evidence_level = data.get('evidence_level')
     if (confidence.get('evidence_level') or 0.0) < _CONF_NEEDS_REVIEW:
@@ -176,12 +161,12 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
     if population not in _ALLOWED_POPULATIONS:
         population = None
 
-    tags = {
-        'sports': sports,
-        'movement_practices': movement_practices,
-        'body_regions': body_regions,
-        'topics': topics,
-        'research_dimensions': research_dimensions,
+    return {
+        'sports': _confidence_gated(data, 'sports', _ALLOWED_SPORTS, 'sports'),
+        'movement_practices': _filter_allowed(data.get('movement_practices'), _ALLOWED_MOVEMENT_PRACTICES),
+        'body_regions': _confidence_gated(data, 'body_regions', _ALLOWED_BODY_REGIONS, 'body_regions'),
+        'topics': _confidence_gated(data, 'topics', _ALLOWED_TOPICS, 'topics'),
+        'research_dimensions': _filter_allowed(data.get('research_dimensions'), _ALLOWED_RESEARCH_DIMENSIONS),
         'study_type': study_type,
         'population': population,
         'sample_size': _parse_sample_size(data.get('sample_size')),
@@ -191,7 +176,26 @@ def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | Non
         'confidence_topics': confidence.get('topics'),
         'confidence_evidence': confidence.get('evidence_level'),
     }
-    return tags, inp, out
+
+
+def tag_paper(client: anthropic.Anthropic, enrichment: dict) -> tuple[dict | None, int, int]:
+    """
+    Call the tagger LLM and return a tag dict.
+    Returns (tags | None, input_tokens, output_tokens).
+    """
+    paper = enrichment.get('papers') or {}
+    title = paper.get('title', '')
+    abstract = paper.get('abstract', '')
+
+    if not abstract:
+        return None, 0, 0
+
+    data, inp, out = _call_llm(client, title, abstract)
+    if data is None:
+        return None, inp, out
+
+    _log_reasoning(data)
+    return _validate_tags(data), inp, out
 
 
 def main() -> None:
