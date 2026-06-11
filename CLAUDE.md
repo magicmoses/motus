@@ -10,7 +10,7 @@ NOT an AI coach. NOT a training app. A research intelligence layer.
 - Backend: Supabase (Postgres, Auth, Storage, Cron)
 - Worker: Python (ingestion pipeline)
 - AI: Anthropic API (structured outputs, deterministic prompting)
-- Deploy: Vercel (frontend) + Railway (Python worker)
+- Deploy: Vercel (frontend); pipeline runs via GitHub Actions (daily-pipeline.yml)
 - CI: GitHub Actions
 
 ## Architecture — 4-Stage Pipeline
@@ -67,7 +67,7 @@ Confirm with: "All skill files read. Ready to build."
 
 ## Branch → Deploy flow
 `feature/*` → (review) → `main` → (tested) → `deploy`
-Railway watches `deploy` branch. Vercel watches `deploy` branch.
+Vercel watches `deploy` branch. The pipeline runs from `main` via GitHub Actions.
 
 ## Context hygiene
 - /compact before switching to a new major task

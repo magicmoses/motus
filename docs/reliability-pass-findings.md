@@ -16,12 +16,13 @@ GitHub Actions cron (06:00 UTC)
 
 It is broken at three independent points:
 
-1. **Railway never serves the Flask app.** Both `apps/worker/railway.toml` and
-   `apps/worker/nixpacks.toml` set the start command to `python run_pipeline.py` — a one-shot
-   script that runs and exits. `api_server.py` is never started, so nothing listens for the
-   trigger. Evidence: every trigger gets Railway's edge error
+1. **Railway never serves the Flask app.** The repo carries two *conflicting* Railway configs:
+   the root `railway.toml` starts `api_server.py`, while `apps/worker/railway.toml` and
+   `apps/worker/nixpacks.toml` start `python run_pipeline.py` — a one-shot script that runs
+   and exits, leaving nothing listening. Whichever config the service used, the observed
+   result is the same: every trigger gets Railway's edge error
    `{"status":"error","code":502,"message":"Application failed to respond"}`
-   (Actions run 27339659136, 2026-06-11).
+   (Actions run 27339659136, 2026-06-11), i.e. no HTTP listener was ever up.
 
 2. **The failure is silent.** The workflow's `curl` has no `--fail` flag, so HTTP 502 still
    exits 0 and the job reports **success**. All scheduled runs since 2026-06-08 are "green"

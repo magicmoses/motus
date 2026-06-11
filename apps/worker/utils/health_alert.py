@@ -1,7 +1,7 @@
 """
 Pipeline health monitoring. Called at the start of each pipeline run.
 Logs a prominent warning if the pipeline has been idle too long,
-so the issue is visible in Railway logs without a separate alerting system.
+so the issue is visible in the run logs without a separate alerting system.
 """
 from utils.logger import get_logger
 
@@ -31,7 +31,7 @@ def check_and_log() -> float | None:
     if hours_ago >= IDLE_CRITICAL_HOURS:
         logger.error(
             f'HEALTH CRITICAL: Pipeline idle for {hours_ago:.1f}h '
-            f'(threshold: {IDLE_CRITICAL_HOURS}h) — investigate Railway cron and deploy logs'
+            f'(threshold: {IDLE_CRITICAL_HOURS}h) — check the Daily Pipeline workflow runs'
         )
     elif hours_ago >= IDLE_WARNING_HOURS:
         logger.warning(

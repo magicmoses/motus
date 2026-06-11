@@ -1,6 +1,7 @@
 """
-Full pipeline entrypoint. Run all 4 stages in sequence.
-Designed for Railway cron: python run_pipeline.py
+Full pipeline entrypoint. Run all stages in sequence.
+Runs daily via GitHub Actions (.github/workflows/daily-pipeline.yml)
+or manually: python run_pipeline.py
 """
 import os
 import sys
