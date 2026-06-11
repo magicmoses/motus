@@ -41,6 +41,17 @@ def _patch_queries(**overrides):
     return patchers
 
 
+class TestTitleHash:
+    def test_case_insensitive(self):
+        assert title_hash('Hello World') == title_hash('hello world')
+
+    def test_strips_whitespace(self):
+        assert title_hash('  hello  ') == title_hash('hello')
+
+    def test_different_titles(self):
+        assert title_hash('Title A') != title_hash('Title B')
+
+
 class TestIsDuplicate:
     def test_doi_in_seen_set_no_db_call(self):
         paper = _paper()

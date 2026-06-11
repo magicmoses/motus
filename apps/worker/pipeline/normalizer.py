@@ -1,5 +1,4 @@
 import argparse
-import hashlib
 from datetime import date
 from typing import Optional
 
@@ -17,10 +16,6 @@ ABSTRACT_MIN_WORDS = 80
 
 def word_count(text: str) -> int:
     return len(text.split()) if text else 0
-
-
-def title_hash(title: str) -> str:
-    return hashlib.md5(title.lower().strip().encode()).hexdigest()
 
 
 def _parse_date(date_str: Optional[str]) -> Optional[date]:
@@ -44,7 +39,9 @@ def _validate(paper: dict) -> tuple[bool, str]:
     - No DOI and no stable source URL
     - published_at < 2018
     - DOI already in papers table (duplicate)
-    - Title hash already in papers table (duplicate)
+
+    Title-level dedup happens upstream in the researcher (in-memory per run);
+    there is no DB-side title hash.
     """
     abstract = paper.get('abstract') or ''
     if not abstract:
@@ -63,10 +60,6 @@ def _validate(paper: dict) -> tuple[bool, str]:
 
     if doi and queries.paper_exists_by_doi(doi):
         return False, 'duplicate DOI'
-
-    th = title_hash(paper.get('title', ''))
-    if queries.paper_exists_by_title_hash(th):
-        return False, 'duplicate title'
 
     return True, ''
 

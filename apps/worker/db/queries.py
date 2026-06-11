@@ -97,12 +97,6 @@ def paper_exists_in_queue_by_source_id(source_id: str) -> bool:
     return bool(result.data)
 
 
-def paper_exists_by_title_hash(title_hash: str) -> bool:
-    # We store title hash check in-memory across the run; DB has no title_hash column
-    # This function is a no-op hook for future DB-side dedup
-    return False
-
-
 def get_papers_missing_citation_count(limit: int = 200) -> list[dict]:
     """Return papers from non-SS sources that have no citation_count yet."""
     client = get_client()
@@ -136,7 +130,7 @@ def get_failed_queue_items_for_retry(limit: int = 200) -> list[dict]:
         .execute()
     )
     structural = {'abstract too short', 'missing abstract', 'no identifier',
-                  'paper too old', 'duplicate DOI', 'duplicate title'}
+                  'paper too old', 'duplicate DOI'}
     rows = [
         r for r in (result.data or [])
         if not any(s in (r.get('error') or '') for s in structural)
