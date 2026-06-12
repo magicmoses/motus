@@ -9,7 +9,6 @@ from pipeline.normalizer import (
     _normalize_paper,
     _parse_date,
     _validate,
-    title_hash,
     word_count,
 )
 
@@ -63,63 +62,54 @@ class TestParseDate:
 
 class TestValidate:
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_valid_paper_accepted(self, mock_hash, mock_doi):
+    def test_valid_paper_accepted(self, mock_doi):
         valid, reason = _validate(_make_paper())
         assert valid is True
         assert reason == ''
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_missing_abstract(self, mock_hash, mock_doi):
+    def test_missing_abstract(self, mock_doi):
         valid, reason = _validate(_make_paper(abstract=''))
         assert valid is False
         assert 'abstract' in reason
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_short_abstract(self, mock_hash, mock_doi):
+    def test_short_abstract(self, mock_doi):
         valid, reason = _validate(_make_paper(abstract='too short'))
         assert valid is False
         assert 'abstract' in reason
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_no_doi_and_no_source_url(self, mock_hash, mock_doi):
+    def test_no_doi_and_no_source_url(self, mock_doi):
         valid, reason = _validate(_make_paper(doi=None, source_url=None))
         assert valid is False
         assert 'identifier' in reason
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_paper_too_old(self, mock_hash, mock_doi):
+    def test_paper_too_old(self, mock_doi):
         valid, reason = _validate(_make_paper(published_at='2015-01-01'))
         assert valid is False
         assert 'old' in reason
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=True)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_duplicate_doi(self, mock_hash, mock_doi):
+    def test_duplicate_doi(self, mock_doi):
         valid, reason = _validate(_make_paper())
         assert valid is False
         assert 'duplicate' in reason.lower()
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_no_doi_but_source_url_ok(self, mock_hash, mock_doi):
+    def test_no_doi_but_source_url_ok(self, mock_doi):
         valid, reason = _validate(_make_paper(doi=None))
         assert valid is True
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_on_cutoff_date_accepted(self, mock_hash, mock_doi):
+    def test_on_cutoff_date_accepted(self, mock_doi):
         cutoff_str = CUTOFF_DATE.isoformat()
         valid, _ = _validate(_make_paper(published_at=cutoff_str))
         assert valid is True
 
     @patch('pipeline.normalizer.queries.paper_exists_by_doi', return_value=False)
-    @patch('pipeline.normalizer.queries.paper_exists_by_title_hash', return_value=False)
-    def test_missing_published_at_accepted(self, mock_hash, mock_doi):
+    def test_missing_published_at_accepted(self, mock_doi):
         valid, reason = _validate(_make_paper(published_at=None))
         assert valid is True
 
@@ -143,6 +133,13 @@ class TestNormalizePaper:
         result = _normalize_paper(paper)
         assert result['published_at'] is None
 
+    def test_unparseable_published_at_becomes_none(self):
+        # RFC-822 RSS dates used to be truncated to garbage ("Mon, 09 Ju")
+        # and crash the papers insert — now they degrade to None
+        paper = _make_paper(published_at='Mon, 09 Jun 2026 10:00:00 GMT')
+        result = _normalize_paper(paper)
+        assert result['published_at'] is None
+
     def test_authors_defaults_to_empty_list(self):
         paper = _make_paper(authors=None)
         result = _normalize_paper(paper)
@@ -154,13 +151,3 @@ class TestNormalizePaper:
         result = _normalize_paper(paper)
         assert 'internal_queue_id' not in result
 
-
-class TestTitleHash:
-    def test_case_insensitive(self):
-        assert title_hash('Hello World') == title_hash('hello world')
-
-    def test_strips_whitespace(self):
-        assert title_hash('  hello  ') == title_hash('hello')
-
-    def test_different_titles(self):
-        assert title_hash('Title A') != title_hash('Title B')

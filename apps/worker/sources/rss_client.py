@@ -31,6 +31,15 @@ RSS_FEEDS = [
 DOI_PATTERN = re.compile(r'10\.\d{4,}/[^\s"<>?#]+')
 
 
+def _entry_date(entry) -> Optional[str]:
+    """RSS pubDates are RFC-822 ('Mon, 09 Jun 2026 …'). Use feedparser's
+    parsed struct_time and emit the ISO date the normalizer expects."""
+    parsed = getattr(entry, 'published_parsed', None)
+    if not parsed:
+        return None
+    return time.strftime('%Y-%m-%d', parsed)
+
+
 class RSSClient:
     def __init__(self) -> None:
         self.crossref = CrossrefClient()
@@ -98,7 +107,7 @@ class RSSClient:
                 'source_id': doi,
                 'source_name': 'rss',
                 'source_url': link,
-                'published_at': getattr(entry, 'published', None),
+                'published_at': _entry_date(entry),
             })
         return results
 

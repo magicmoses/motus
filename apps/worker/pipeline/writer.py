@@ -3,19 +3,13 @@ import os
 from pathlib import Path
 
 import anthropic
-from dotenv import load_dotenv
 
 from db import queries
 from utils.cost_tracker import log_call
+from utils.env import load_env
 from utils.logger import get_logger
 
-_here = Path(__file__).parent
-for _name in ('.env', '.env.local'):
-    for _dir in (_here, _here.parent, _here.parent.parent, _here.parent.parent.parent):
-        _p = _dir / _name
-        if _p.exists():
-            load_dotenv(_p, override=False)
-            break
+load_env()
 logger = get_logger(__name__)
 
 MODEL = 'claude-haiku-4-5-20251001'
@@ -127,9 +121,7 @@ def main() -> None:
         for e in failed:
             queries.delete_enrichment(e['id'])
         logger.info('Deleted — re-running writer on those papers now')
-        paper_ids = {e['paper_id'] for e in failed}
-        papers_raw = queries.get_papers_without_enrichment(limit=len(paper_ids) + 10)
-        papers = [p for p in papers_raw if p['id'] in paper_ids]
+        papers = queries.get_papers_by_ids([e['paper_id'] for e in failed])
     else:
         papers = queries.get_papers_without_enrichment(limit=args.limit)
 

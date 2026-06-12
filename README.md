@@ -31,7 +31,7 @@ Target athletes: runners, cyclists, rowers, Hyrox athletes, skiers, inline skate
 | Backend | Supabase (Postgres, Auth, Storage) |
 | Worker | Python ingestion pipeline |
 | AI | Anthropic API (structured outputs) |
-| Deploy | Vercel + Railway |
+| Deploy | Vercel (frontend) + GitHub Actions (pipeline) |
 
 ---
 
@@ -102,4 +102,4 @@ No fulltext storage. No paywalled content. Scientific references + own enrichmen
 Branch strategy:
 - `feature/*` → worktree development
 - `main` → reviewed, tested code
-- `deploy` → production (Vercel + Railway watch this branch)
+- `deploy` → production (Vercel watches this branch; the pipeline runs from `main` via GitHub Actions)

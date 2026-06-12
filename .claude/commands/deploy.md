@@ -1,6 +1,7 @@
 # /deploy
 
-Merge main to deploy branch — triggers Vercel (frontend) and Railway (worker).
+Merge main to deploy branch — triggers Vercel (frontend). The pipeline runs
+from `main` via GitHub Actions (daily-pipeline.yml) and is not part of deploy.
 
 ## Pre-deploy checklist
 1. Confirm all tests pass: `cd apps/worker && pytest` + `cd apps/web && npx vitest run`
@@ -13,7 +14,7 @@ Merge main to deploy branch — triggers Vercel (frontend) and Railway (worker).
 3. `git push origin deploy`
 
 ## Post-deploy
-- Monitor Railway worker logs: `railway logs`
+- Check the latest Daily Pipeline run: `gh run list --workflow=daily-pipeline.yml`
 - Check Vercel deployment status in dashboard
 - Run smoke test: hit /api/health endpoint
 - Confirm latest papers visible in feed
