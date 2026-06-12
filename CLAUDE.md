@@ -2,11 +2,11 @@
 
 ## What this is
 Personalized sports science discovery for endurance athletes (hobby & elite).
-Research index + LLM enrichment + 3D anatomy navigation.
+Research index + LLM enrichment + injury & body-region exploration.
 NOT an AI coach. NOT a training app. A research intelligence layer.
 
 ## Stack
-- Frontend: Next.js 15, Tailwind, shadcn/ui, React Three Fiber
+- Frontend: Next.js 15, Tailwind, shadcn/ui
 - Backend: Supabase (Postgres, Auth, Storage, Cron)
 - Worker: Python (ingestion pipeline)
 - AI: Anthropic API (structured outputs, deterministic prompting)

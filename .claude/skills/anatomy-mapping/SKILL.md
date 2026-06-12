@@ -8,7 +8,13 @@ description: >
 
 # Anatomy Mapping
 
-## Tech stack
+> **NOTE (2026-06-12):** The 3D body viewer experiment was removed from the app
+> (components/anatomy/, public/models/, three.js deps are gone). The component
+> and tech-stack sections below are historical. The sport → body-region and
+> injury-zone mappings remain the canonical reference for the tagger enums and
+> the Injury Risk Explorer on /explore.
+
+## Tech stack (historical — removed)
 React Three Fiber + Three.js + GLTF model
 Component location: apps/web/components/anatomy/
 

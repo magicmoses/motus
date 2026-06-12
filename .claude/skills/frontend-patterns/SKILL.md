@@ -13,11 +13,9 @@ description: >
 apps/web/
   app/
     page.tsx              — homepage (anatomy + feed)
-    for-you/page.tsx      — personalized feed
     new/page.tsx          — chronological feed
     paper/[id]/page.tsx   — paper detail
   components/
-    anatomy/              — 3D model, hover, highlighting (see anatomy-mapping skill)
     feed/
       FeedCard.tsx        — paper card component
       FeedList.tsx        — virtualized list
