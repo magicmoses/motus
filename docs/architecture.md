@@ -2,7 +2,7 @@
 
 ## Overview
 Personalized sports science discovery for endurance athletes.
-Research index + LLM enrichment + 3D anatomy navigation.
+Research index + LLM enrichment + injury & body-region exploration.
 
 ## System diagram
 ```
@@ -18,7 +18,7 @@ alphaXiv                                    Lightweight Research Index
                                                        ↓
                                             Next.js Frontend (Vercel)
                                                        ↓
-                                            3D Anatomy Discovery UI
+                                            Explore UI (Injury Risk Explorer, Research Roulette)
 ```
 
 ## Pipeline stages
@@ -34,7 +34,6 @@ See .claude/skills/ingestion-pipeline/SKILL.md
 - No LangChain / vector DB / RAG
 - Deterministic 4-stage pipeline, not agentic loops
 - Haiku for enrichment at scale, Sonnet for quality checks
-- GLTF anatomy model with React Three Fiber
 
 ## Data sources
 See .claude/skills/research-knowledge/SKILL.md

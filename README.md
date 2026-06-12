@@ -2,7 +2,7 @@
 
 > Personalized sports science discovery for endurance athletes.
 
-Research index + LLM enrichment + 3D anatomy navigation — built with Claude Code.
+Research index + LLM enrichment + injury & body-region exploration — built with Claude Code.
 
 ---
 
@@ -15,7 +15,7 @@ A lightweight platform connecting endurance athletes with current sports science
 Core features:
 - Evidence-based paper discovery via PubMed + Semantic Scholar
 - LLM-generated summaries (factual, source-grounded, no coaching language)
-- Interactive 3D anatomy model for body-region-based discovery
+- Injury Risk Explorer + Research Roulette for body-region-based discovery
 - Personalized feed by sport, distance, interests
 - Save papers to custom research lists
 
@@ -27,7 +27,7 @@ Target athletes: runners, cyclists, rowers, Hyrox athletes, skiers, inline skate
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Next.js 15, Tailwind, shadcn/ui, React Three Fiber |
+| Frontend | Next.js 15, Tailwind, shadcn/ui |
 | Backend | Supabase (Postgres, Auth, Storage) |
 | Worker | Python ingestion pipeline |
 | AI | Anthropic API (structured outputs) |
